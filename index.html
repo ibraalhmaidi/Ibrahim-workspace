@@ -226,7 +226,7 @@ function render(){
  $('allIdeas').innerHTML=ideas.filter(i=>(!q||i.title.toLowerCase().includes(q))&&(f==='all'||i.status===f)).map(i=>ideaHTML(i)).join('')||'<div class="empty">لا توجد أفكار مطابقة</div>';bind()
 }
 ['taskSearch','taskFilter','ideaSearch','ideaFilter'].forEach(id=>$(id).addEventListener('input',render));
-$('notifyBtn').onclick=async()=>{if(!('Notification'in window)){toast('المتصفح لا يدعم الإشعارات');return}let p=await Notification.requestPermission();toast(p==='granted'?'تم السماح بالإشعارات المحلية':'لم يتم منح إذن الإشعارات')};
+$('notifyBtn').onclick=async()=>{try{if(!window.OneSignal){toast('انتظر تحميل خدمة الإشعارات ثم حاول مجددًا');return}if(user){await OneSignalDeferred.push(async function(OS){await OS.login(user.id)});}await OneSignalDeferred.push(async function(OS){await OS.Notifications.requestPermission();await OS.User.PushSubscription.optIn();});toast('تم طلب تفعيل إشعارات OneSignal')}catch(e){toast('تعذر تفعيل الإشعارات: '+(e?.message||'حاول مرة أخرى'))}};
 async function loadData(){
  setStatus('جارٍ تحميل بياناتك السحابية...');
  const [tr,ir]=await Promise.all([db.from('tasks').select('*').order('created_at',{ascending:false}),db.from('ideas').select('*').order('created_at',{ascending:false})]);
@@ -258,10 +258,10 @@ db.auth.onAuthStateChange(async(event,session)=>{
   };
   showAuth('أدخل كلمة المرور الجديدة ثم اضغط حفظ كلمة المرور.');return;
  }
- if(session?.user){user=session.user;hideAuth();if(!tasks.length&&!ideas.length)await loadData()}
+ if(session?.user){user=session.user;hideAuth();OneSignalDeferred.push(async function(OS){try{await OS.login(user.id)}catch(e){console.error(e)}});if(!tasks.length&&!ideas.length)await loadData()}
  else{user=null;showAuth()}
 });
-(async()=>{const {data:{session}}=await db.auth.getSession();if(session?.user){user=session.user;hideAuth();await loadData()}else showAuth()})();
+(async()=>{const {data:{session}}=await db.auth.getSession();if(session?.user){user=session.user;hideAuth();OneSignalDeferred.push(async function(OS){try{await OS.login(user.id)}catch(e){console.error(e)}});await loadData()}else showAuth()})();
 </script>
 </body>
 </html>
