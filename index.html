@@ -152,7 +152,13 @@ OneSignalDeferred.push(async function(OneSignal) {
 const $=id=>document.getElementById(id);
 const SUPABASE_URL='https://jcxdlcyolsbmmklcbwhb.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY='sb_publishable_h1qyfqlymyq4xkDcWZiFgg_pFKqdE4k';
-const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
+const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY,{
+  auth:{
+    persistSession:true,
+    autoRefreshToken:true,
+    detectSessionInUrl:true
+  }
+});
 let user=null,tasks=[],ideas=[],notified=new Set(),channel=null;
 const localTasks=()=>JSON.parse(localStorage.getItem('ib_tasks')||'[]');
 const localIdeas=()=>JSON.parse(localStorage.getItem('ib_ideas')||'[]');
