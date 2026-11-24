@@ -92,6 +92,7 @@ window.OneSignalDeferred.push(async function(OneSignal) {
       serviceWorkerPath: "/Ibrahim-workspace/OneSignalSDKWorker.js",
       serviceWorkerParam: { scope: "/Ibrahim-workspace/" }
     });
+    window.OneSignalInstance = OneSignal;
     window.__oneSignalReady = true;
   } catch (error) {
     window.__oneSignalInitError = error?.message || String(error);
@@ -241,7 +242,7 @@ function render(){
  $('allIdeas').innerHTML=ideas.filter(i=>(!q||i.title.toLowerCase().includes(q))&&(f==='all'||i.status===f)).map(i=>ideaHTML(i)).join('')||'<div class="empty">لا توجد أفكار مطابقة</div>';bind()
 }
 ['taskSearch','taskFilter','ideaSearch','ideaFilter'].forEach(id=>$(id).addEventListener('input',render));
-$('notifyBtn').onclick=()=>{toast('تم الضغط على زر التنبيهات، جارٍ الاتصال...');if(window.__oneSignalInitError){toast('خطأ التهيئة: '+window.__oneSignalInitError);return}if(window.__oneSignalScriptFailed){toast('تعذر تحميل ملف OneSignal');return}if(!window.__oneSignalScriptLoaded){toast('ملف OneSignal لم يكتمل تحميله');return}if(!window.__oneSignalCallbackStarted){toast('المكتبة تحمّلت لكن أمر التهيئة لم يبدأ');return}if(!window.__oneSignalReady){toast('بدأت التهيئة لكنها معلّقة؛ غالبًا تسجيل Service Worker');return}OneSignalDeferred.push(async function(OS){try{await OS.Notifications.requestPermission();await OS.User.PushSubscription.optIn();toast('تم طلب تفعيل الإشعارات')}catch(e){toast('خطأ OneSignal: '+(e?.message||String(e)))}})};
+$('notifyBtn').onclick=async()=>{toast('جارٍ تفعيل الإشعارات...');if(window.__oneSignalInitError){toast('خطأ التهيئة: '+window.__oneSignalInitError);return}if(window.__oneSignalScriptFailed){toast('تعذر تحميل ملف OneSignal');return}if(!window.__oneSignalScriptLoaded){toast('ملف OneSignal لم يكتمل تحميله');return}if(!window.__oneSignalReady||!window.OneSignalInstance){toast('OneSignal لم يكتمل تشغيله؛ أعد فتح الموقع بعد دقيقة');return}try{const OS=window.OneSignalInstance;await OS.Notifications.requestPermission();await OS.User.PushSubscription.optIn();const sub=OS.User.PushSubscription;if(sub.optedIn&&sub.id){toast('تم تفعيل الإشعارات بنجاح');}else{toast('لم يكتمل الاشتراك. حالة الإذن: '+OS.Notifications.permission+' — الاشتراك: '+sub.optedIn+' — المعرّف: '+(sub.id||'غير موجود'));}}catch(e){toast('تعذر تفعيل الإشعارات: '+(e?.message||String(e)))}};
 async function loadData(){
  setStatus('جارٍ تحميل بياناتك السحابية...');
  const [tr,ir]=await Promise.all([db.from('tasks').select('*').order('created_at',{ascending:false}),db.from('ideas').select('*').order('created_at',{ascending:false})]);
