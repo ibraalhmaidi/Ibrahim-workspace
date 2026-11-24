@@ -82,10 +82,7 @@ OneSignalDeferred.push(async function(OneSignal) {
   window.__oneSignalCallbackStarted = true;
   try {
     await OneSignal.init({
-      appId: "29e4a84a-aa52-4b1a-aa72-b9dc944ddbe9",
-      serviceWorkerPath: "OneSignalSDKWorker.js",
-      serviceWorkerParam: { scope: "/Ibrahim-workspace/" },
-      serviceWorkerOverrideForTypical: true
+      appId: "29e4a84a-aa52-4b1a-aa72-b9dc944ddbe9"
     });
     window.__oneSignalReady = true;
   } catch (error) {
