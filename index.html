@@ -79,11 +79,17 @@ body{background:#fff;color:#263746}
 <script>
 window.OneSignalDeferred = window.OneSignalDeferred || [];
 OneSignalDeferred.push(async function(OneSignal) {
-  await OneSignal.init({
-    appId: "29e4a84a-aa52-4b1a-aa72-b9dc944ddbe9",
-    serviceWorkerPath: "/Ibrahim-workspace/OneSignalSDKWorker.js",
-    serviceWorkerParam: { scope: "/Ibrahim-workspace/" }
-  });
+  try {
+    await OneSignal.init({
+      appId: "29e4a84a-aa52-4b1a-aa72-b9dc944ddbe9",
+      serviceWorkerPath: "/Ibrahim-workspace/OneSignalSDKWorker.js",
+      serviceWorkerParam: { scope: "/Ibrahim-workspace/" }
+    });
+    window.__oneSignalReady = true;
+  } catch (error) {
+    window.__oneSignalInitError = error?.message || String(error);
+    console.error("OneSignal init failed:", error);
+  }
 });
 </script>
 </head>
