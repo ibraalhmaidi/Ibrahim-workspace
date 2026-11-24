@@ -256,7 +256,7 @@ const themeToggle=$('themeToggle');
 function applyTheme(mode){document.body.classList.toggle('dark',mode==='dark');if(themeToggle){themeToggle.textContent=mode==='dark'?'☀':'☾';themeToggle.title=mode==='dark'?'الوضع الفاتح':'الوضع الليلي'};document.querySelector('meta[name="theme-color"]')?.setAttribute('content',mode==='dark'?'#171421':'#f7f5fb')}
 const savedTheme=localStorage.getItem('ib_theme')||'light';applyTheme(savedTheme);
 themeToggle?.addEventListener('click',()=>{const next=document.body.classList.contains('dark')?'light':'dark';localStorage.setItem('ib_theme',next);applyTheme(next)});
-\nfunction toast(t){$('toast').textContent=t;$('toast').classList.add('show');setTimeout(()=>$('toast').classList.remove('show'),2400)}
+function toast(t){$('toast').textContent=t;$('toast').classList.add('show');setTimeout(()=>$('toast').classList.remove('show'),2400)}
 function showAuth(msg=''){$('authScreen').classList.add('show');$('authMessage').textContent=msg}
 function hideAuth(){$('authScreen').classList.remove('show')}
 async function signIn(mode){
