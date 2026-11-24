@@ -4,6 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="theme-color" content="#ffffff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="مساحة إبراهيم">
+<link rel="manifest" href="/Ibrahim-workspace/manifest.webmanifest">
+<link rel="apple-touch-icon" href="/Ibrahim-workspace/icon.svg">
 <title>مساحة إبراهيم</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@400;500;600;700&display=swap');
@@ -75,14 +80,17 @@ body{background:#fff;color:#263746}
 .auth-card input{width:100%;padding:12px;border:1px solid #e4edf1;border-radius:11px;margin:7px 0 12px;direction:ltr;text-align:left}
 .auth-actions{display:flex;gap:8px}.auth-actions button{flex:1}.auth-msg{font-size:12px;color:#159fc2;min-height:20px}
 .sync-status{font-size:10px;color:#159fc2;margin-top:5px}
-</style><script id="oneSignalSdk" src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer onload="window.__oneSignalScriptLoaded=true" onerror="window.__oneSignalScriptFailed=true"></script>
+</style><script id="oneSignalSdk" src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.es6.js" defer onload="window.__oneSignalScriptLoaded=true" onerror="window.__oneSignalScriptFailed=true"></script>
 <script>
 window.OneSignalDeferred = window.OneSignalDeferred || [];
-OneSignalDeferred.push(async function(OneSignal) {
+window.OneSignalDeferred.push(async function(OneSignal) {
   window.__oneSignalCallbackStarted = true;
   try {
     await OneSignal.init({
-      appId: "29e4a84a-aa52-4b1a-aa72-b9dc944ddbe9"
+      appId: "29e4a84a-aa52-4b1a-aa72-b9dc944ddbe9",
+      serviceWorkerPath: "/Ibrahim-workspace/OneSignalSDKWorker.js",
+      serviceWorkerParam: { scope: "/Ibrahim-workspace/" },
+      serviceWorkerOverrideForTypical: true
     });
     window.__oneSignalReady = true;
   } catch (error) {
