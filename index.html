@@ -75,7 +75,7 @@ body{background:#fff;color:#263746}
 .auth-card input{width:100%;padding:12px;border:1px solid #e4edf1;border-radius:11px;margin:7px 0 12px;direction:ltr;text-align:left}
 .auth-actions{display:flex;gap:8px}.auth-actions button{flex:1}.auth-msg{font-size:12px;color:#159fc2;min-height:20px}
 .sync-status{font-size:10px;color:#159fc2;margin-top:5px}
-</style><script src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer></script>
+</style><script id="oneSignalSdk" src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer onload="window.__oneSignalScriptLoaded=true" onerror="window.__oneSignalScriptFailed=true"></script>
 <script>
 window.OneSignalDeferred = window.OneSignalDeferred || [];
 OneSignalDeferred.push(async function(OneSignal) {
@@ -234,7 +234,7 @@ function render(){
  $('allIdeas').innerHTML=ideas.filter(i=>(!q||i.title.toLowerCase().includes(q))&&(f==='all'||i.status===f)).map(i=>ideaHTML(i)).join('')||'<div class="empty">لا توجد أفكار مطابقة</div>';bind()
 }
 ['taskSearch','taskFilter','ideaSearch','ideaFilter'].forEach(id=>$(id).addEventListener('input',render));
-$('notifyBtn').onclick=()=>{toast('تم الضغط على زر التنبيهات، جارٍ الاتصال...');try{OneSignalDeferred.push(async function(OS){toast('تم الاتصال بخدمة OneSignal');try{await OS.Notifications.requestPermission();await OS.User.PushSubscription.optIn();toast('تم تفعيل طلب الاشتراك بالإشعارات')}catch(e){toast('خطأ OneSignal: '+(e?.message||String(e)))}})}catch(e){toast('خطأ: '+(e?.message||String(e)))}};
+$('notifyBtn').onclick=()=>{toast('تم الضغط على زر التنبيهات، جارٍ الاتصال...');if(window.__oneSignalInitError){toast('خطأ التهيئة: '+window.__oneSignalInitError);return}if(window.__oneSignalScriptFailed){toast('تعذر تحميل ملف OneSignal');return}if(!window.__oneSignalScriptLoaded){toast('ملف OneSignal لم يكتمل تحميله');return}if(!window.__oneSignalReady){toast('ملف OneSignal تحمّل لكن التهيئة لم تكتمل');return}OneSignalDeferred.push(async function(OS){try{await OS.Notifications.requestPermission();await OS.User.PushSubscription.optIn();toast('تم طلب تفعيل الإشعارات')}catch(e){toast('خطأ OneSignal: '+(e?.message||String(e)))}})};
 async function loadData(){
  setStatus('جارٍ تحميل بياناتك السحابية...');
  const [tr,ir]=await Promise.all([db.from('tasks').select('*').order('created_at',{ascending:false}),db.from('ideas').select('*').order('created_at',{ascending:false})]);
