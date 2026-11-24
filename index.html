@@ -331,6 +331,14 @@ async function loadData(){
   if(oldT.length||oldI.length){const [a,b]=await Promise.all([db.from('tasks').select('*').order('created_at',{ascending:false}),db.from('ideas').select('*').order('created_at',{ascending:false})]);if(a.data)tr.data=a.data;if(b.data)ir.data=b.data}
  }
  tasks=(tr.data||[]).map(t=>({...t,desc:t.description||''}));ideas=(ir.data||[]).map(i=>({...i,desc:i.description||''}));
+ // Add the user's X professional-branding idea once, without duplicating it.
+ const xIdeaTitle='إطلاق حساب للمعلوماتية الصحية على منصة X';
+ if(!ideas.some(i=>i.title===xIdeaTitle)){
+  const xIdea={id:crypto.randomUUID(),user_id:user.id,title:xIdeaTitle,description:'إنشاء حساب مهني متخصص في المعلوماتية الصحية على منصة X لبناء حضور رقمي موثوق، ومشاركة المعرفة والتجارب والأفكار العملية، والتواصل مع المختصين والمهتمين.\n\nخطة النجاح والنمو:\n1) الهوية: اختر اسم مستخدم واضحًا، وصورة وغلافًا احترافيين، واكتب نبذة تشرح تخصصك والقيمة التي تقدمها.\n2) المحتوى: انشر تبسيطًا لمفاهيم المعلوماتية الصحية، والتحول الرقمي والسجلات الصحية الإلكترونية، والذكاء الاصطناعي في الصحة، وتحسين تجربة المريض وسير العمل، مع دروس وتجارب مهنية عامة دون مشاركة أي بيانات مرضى أو معلومات سرية.\n3) التفاعل: علّق بإضافة معرفية على حسابات المختصين والجهات الصحية، وشارك في النقاشات، واسأل أسئلة تفتح حوارًا، وابنِ علاقات مهنية حقيقية.\n4) الاستمرارية: ابدأ بـ3 إلى 4 منشورات أسبوعيًا، ومنشور تعليمي أطول أو سلسلة أسبوعية، واستخدم الصور والإنفوجرافيك عند الحاجة.\n5) الانتشار: اجعل بداية المنشور جذابة وواضحة، وقدّم معلومة مفيدة قابلة للحفظ والمشاركة، واستخدم الوسوم ذات الصلة باعتدال، وأعد صياغة أفضل الأفكار بصيغ مختلفة.\n6) التطوير: راقب المشاهدات، والتفاعل، والحفظ، وإعادة النشر، وزيارات الملف، ونمو المتابعين؛ وكرر الموضوعات والصيغ التي تحقق أفضل نتيجة.\n\nأول خطوات التنفيذ: تحديد اسم الحساب والجمهور المستهدف، تجهيز النبذة والغلاف، إعداد قائمة أول 10 موضوعات، ثم إطلاق الحساب والالتزام بخطة نشر لمدة 30 يومًا ومراجعة النتائج أسبوعيًا.\n\nمبدأ مهم: ركّز على المصداقية والفائدة، ولا تشترِ متابعين أو تفاعلًا، ولا تنشر معلومات داخلية من جهة العمل أو أي بيانات تعريفية للمرضى.',status:'new',updated_at:new Date().toISOString()};
+  const {error:xIdeaError}=await db.from('ideas').insert(xIdea);
+  if(!xIdeaError)ideas.unshift({...xIdea,desc:xIdea.description});
+  else console.warn('تعذر إضافة فكرة حساب X تلقائيًا:',xIdeaError.message);
+ }
  setStatus('متصل — تتم مزامنة بياناتك');render();
  if(channel)db.removeChannel(channel);
  channel=db.channel('workspace-'+user.id).on('postgres_changes',{event:'*',schema:'public',table:'tasks',filter:'user_id=eq.'+user.id},()=>loadData()).on('postgres_changes',{event:'*',schema:'public',table:'ideas',filter:'user_id=eq.'+user.id},()=>loadData()).subscribe();
