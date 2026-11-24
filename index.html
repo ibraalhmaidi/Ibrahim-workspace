@@ -79,6 +79,7 @@ body{background:#fff;color:#263746}
 <script>
 window.OneSignalDeferred = window.OneSignalDeferred || [];
 OneSignalDeferred.push(async function(OneSignal) {
+  window.__oneSignalCallbackStarted = true;
   try {
     await OneSignal.init({
       appId: "29e4a84a-aa52-4b1a-aa72-b9dc944ddbe9",
@@ -234,7 +235,7 @@ function render(){
  $('allIdeas').innerHTML=ideas.filter(i=>(!q||i.title.toLowerCase().includes(q))&&(f==='all'||i.status===f)).map(i=>ideaHTML(i)).join('')||'<div class="empty">لا توجد أفكار مطابقة</div>';bind()
 }
 ['taskSearch','taskFilter','ideaSearch','ideaFilter'].forEach(id=>$(id).addEventListener('input',render));
-$('notifyBtn').onclick=()=>{toast('تم الضغط على زر التنبيهات، جارٍ الاتصال...');if(window.__oneSignalInitError){toast('خطأ التهيئة: '+window.__oneSignalInitError);return}if(window.__oneSignalScriptFailed){toast('تعذر تحميل ملف OneSignal');return}if(!window.__oneSignalScriptLoaded){toast('ملف OneSignal لم يكتمل تحميله');return}if(!window.__oneSignalReady){toast('ملف OneSignal تحمّل لكن التهيئة لم تكتمل');return}OneSignalDeferred.push(async function(OS){try{await OS.Notifications.requestPermission();await OS.User.PushSubscription.optIn();toast('تم طلب تفعيل الإشعارات')}catch(e){toast('خطأ OneSignal: '+(e?.message||String(e)))}})};
+$('notifyBtn').onclick=()=>{toast('تم الضغط على زر التنبيهات، جارٍ الاتصال...');if(window.__oneSignalInitError){toast('خطأ التهيئة: '+window.__oneSignalInitError);return}if(window.__oneSignalScriptFailed){toast('تعذر تحميل ملف OneSignal');return}if(!window.__oneSignalScriptLoaded){toast('ملف OneSignal لم يكتمل تحميله');return}if(!window.__oneSignalCallbackStarted){toast('المكتبة تحمّلت لكن أمر التهيئة لم يبدأ');return}if(!window.__oneSignalReady){toast('بدأت التهيئة لكنها معلّقة؛ غالبًا تسجيل Service Worker');return}OneSignalDeferred.push(async function(OS){try{await OS.Notifications.requestPermission();await OS.User.PushSubscription.optIn();toast('تم طلب تفعيل الإشعارات')}catch(e){toast('خطأ OneSignal: '+(e?.message||String(e)))}})};
 async function loadData(){
  setStatus('جارٍ تحميل بياناتك السحابية...');
  const [tr,ir]=await Promise.all([db.from('tasks').select('*').order('created_at',{ascending:false}),db.from('ideas').select('*').order('created_at',{ascending:false})]);
