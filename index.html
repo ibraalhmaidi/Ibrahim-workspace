@@ -134,6 +134,24 @@ body.dark .overdue .task-meta{color:#ffaaaa}
 .overdue .task-main p{color:#a94b4b}
 
 .floating-quick-add{position:fixed;right:22px;bottom:calc(24px + env(safe-area-inset-bottom));z-index:15;width:46px;height:46px;border-radius:16px;background:var(--blue);color:#fff;font-size:25px;line-height:1;box-shadow:0 8px 24px rgba(70,82,160,.28);display:grid;place-items:center;touch-action:none;cursor:grab;user-select:none}.floating-quick-add.dragging{cursor:grabbing;transition:none;box-shadow:0 12px 28px rgba(70,82,160,.36)}.subtle-note{font-size:12px;color:var(--muted);margin:-4px 0 14px}@media(max-width:560px){.floating-quick-add{width:44px;height:44px;border-radius:15px;right:16px;bottom:calc(82px + env(safe-area-inset-bottom))}}body.dark .floating-quick-add{background:#8d82e8;color:#fff}
+
+/* Four compact home shortcuts with gentle overdue alert */
+.home-shortcuts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px;margin:0 0 25px}
+.home-shortcut{min-width:0;display:flex;align-items:center;gap:11px;text-align:right;padding:16px 15px;border:1px solid var(--line);border-radius:17px;background:var(--panel);color:var(--ink);box-shadow:var(--shadow);transition:border-color .2s,background .2s,box-shadow .2s;}
+.home-shortcut:hover{border-color:#c9b8e2;box-shadow:0 9px 24px rgba(90,65,125,.11)}
+.shortcut-icon{width:39px;height:39px;flex:none;border-radius:13px;display:grid;place-items:center;background:#f0eafb;color:#7054a5;font-size:19px}
+.shortcut-copy{min-width:0;flex:1;display:grid;gap:4px}.shortcut-copy strong{font-size:13px}.shortcut-copy small{font-size:10px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.home-shortcut>b{font-size:18px;color:#7054a5;font-weight:700}
+.home-shortcut.has-overdue{border:1.5px solid #e99b9b;background:#fff8f8;box-shadow:0 0 0 3px rgba(224,111,111,.09),var(--shadow)}
+.home-shortcut.has-overdue .shortcut-icon{background:#ffe9e9;color:#c65b5b}
+.home-shortcut.has-overdue>b{color:#c65b5b}
+body.dark .home-shortcut{background:var(--panel);border-color:var(--line);color:var(--ink)}
+body.dark .shortcut-icon{background:#382d4b;color:#d8c5f4}
+body.dark .home-shortcut.has-overdue{background:#342326;border-color:#a95d65;box-shadow:0 0 0 3px rgba(210,105,115,.12),var(--shadow)}
+body.dark .home-shortcut.has-overdue .shortcut-icon{background:#503036;color:#ffb3b8}
+body.dark .home-shortcut.has-overdue>b{color:#ffb3b8}
+@media(max-width:900px){.home-shortcuts{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:560px){.home-shortcuts{gap:9px;margin-bottom:18px}.home-shortcut{padding:13px 11px;gap:8px;border-radius:15px}.shortcut-icon{width:34px;height:34px;border-radius:11px}.shortcut-copy strong{font-size:12px}.shortcut-copy small{font-size:9px}.home-shortcut>b{font-size:16px}}
 </style>
 
 <style>
@@ -194,11 +212,11 @@ window.OneSignalDeferred.push(async function(OneSignal) {
   </header>
   <section class="view active" id="dashboard">
     <div class="welcome"><div><h2>أهلًا بك في مساحتك ✨</h2><p>رتّب أفكارك، تابع مهامك، وخلي كل شيء واضح قدامك.</p></div><div class="welcome-art">☁️</div></div>
-    <div class="stats">
-      <div class="stat" role="button" tabindex="0" data-stat="sTotal" aria-label="فتح التفاصيل"><div class="stat-head">إجمالي المهام <span class="stat-icon" style="background:#edf0ff">☷</span></div><strong id="sTotal">0</strong><small>كل المهام المسجلة</small></div>
-      <div class="stat" role="button" tabindex="0" data-stat="sDone" aria-label="فتح التفاصيل"><div class="stat-head">مهام منجزة <span class="stat-icon" style="background:#e8f6f0">✓</span></div><strong id="sDone">0</strong><small>إنجازاتك حتى الآن</small></div>
-      <div class="stat" role="button" tabindex="0" data-stat="sPending" aria-label="فتح التفاصيل"><div class="stat-head">المهام المتبقية <span class="stat-icon" style="background:#fff1e8">◷</span></div><strong id="sPending">0</strong><small>ابدأ بالأهم</small></div>
-      <div class="stat" role="button" tabindex="0" data-stat="sIdeas" aria-label="فتح التفاصيل"><div class="stat-head">الأفكار <span class="stat-icon" style="background:#f0ebff">✧</span></div><strong id="sIdeas">0</strong><small>أفكار تنتظر التنفيذ</small></div>\n      <div class="stat" role="button" tabindex="0" data-stat="sOverdue" aria-label="فتح التفاصيل"><div class="stat-head">مهام متأخرة <span class="stat-icon" style="background:#fff0f0;color:#c62828">!</span></div><strong id="sOverdue" style="color:#c62828">0</strong><small>تحتاج انتباهك</small></div>
+    <div class="home-shortcuts">
+      <button class="home-shortcut" data-shortcut="ideas" type="button"><span class="shortcut-icon">✧</span><span class="shortcut-copy"><strong>أفكاري</strong><small>مساحة أفكارك وخططك</small></span><b id="homeIdeasCount">0</b></button>
+      <button class="home-shortcut" data-shortcut="tasks" type="button"><span class="shortcut-icon">☷</span><span class="shortcut-copy"><strong>مهامي</strong><small>المهام المطلوب إنجازها</small></span><b id="homeTasksCount">0</b></button>
+      <button class="home-shortcut" data-shortcut="appointments" type="button"><span class="shortcut-icon">◷</span><span class="shortcut-copy"><strong>مواعيدي</strong><small>اجتماعاتك ومواعيدك</small></span><b id="homeAppointmentsCount">0</b></button>
+      <button class="home-shortcut" data-shortcut="followups" type="button"><span class="shortcut-icon">↻</span><span class="shortcut-copy"><strong>المتابعة</strong><small>الأشخاص والإجراءات</small></span><b id="homeFollowupsCount">0</b></button>
     </div>
     <div class="content-grid">
       <section class="panel"><div class="panel-head"><h3>مهامي القادمة</h3><button class="muted-link" data-goto="tasks">عرض الكل ←</button></div><div class="task-list" id="dashTasks"></div></section>
@@ -278,8 +296,7 @@ $('forgotPassword').onclick=async()=>{
 };
 function go(v){document.querySelectorAll('.view').forEach(x=>x.classList.toggle('active',x.id===v));document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.view===v));$('pageTitle').textContent=({'dashboard':'مساحتك | خطط، أنجز، وتطوّر','tasks':'قائمة مهامي','ideas':'أفكاري الجديدة','appointments':'مواعيدي واجتماعاتي','followups':'سجل المتابعة مع الأشخاص'}[v]||'مساحة إبراهيم');}
 document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>go(b.dataset.view));document.querySelectorAll('[data-goto]').forEach(b=>b.onclick=()=>go(b.dataset.goto));
- function openStat(id){const target={sTotal:['tasks','all'],sDone:['tasks','done'],sPending:['tasks','pending'],sIdeas:['ideas',null],sOverdue:['tasks','overdue']}[id];if(!target)return;go(target[0]);if(target[1]!==null){$('taskFilter').value=target[1];$('taskSearch').value=''}render();window.scrollTo({top:0,behavior:'smooth'})}
- document.querySelectorAll('[data-stat]').forEach(card=>{card.style.cursor='pointer';card.title='اضغط لعرض التفاصيل';card.addEventListener('click',()=>openStat(card.dataset.stat));card.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();openStat(card.dataset.stat)}})});
+ document.querySelectorAll('[data-shortcut]').forEach(card=>card.addEventListener('click',()=>{go(card.dataset.shortcut);window.scrollTo({top:0,behavior:'smooth'})}));
 function parseFollowup(desc=''){const get=k=>(desc.match(new RegExp('^'+k+':\\s*(.*)$','m'))||[])[1]||'';return {person:get('الشخص'),department:get('الجهة'),last:get('آخر تواصل'),next:get('الإجراء'),status:get('الحالة')||'waiting',details:desc.split('\\n').filter(line=>! /^(?:الشخص|الجهة|آخر تواصل|الإجراء|الحالة):/.test(line)).join('\\n').trim()}}
 function openModal(type,item=null){$('entryType').value=type;$('entryId').value=item?.id||'';const label=type==='task'?'مهمة':type==='appointment'?'موعد':type==='followup'?'متابعة':'فكرة';$('modalTitle').textContent=(item?'تعديل ':'إضافة ')+label;$('entryName').value=item?.title||'';const fd=type==='followup'?parseFollowup(item?.desc||''):null;$('entryDesc').value=type==='appointment'?(item?.desc||'').replace(/^الشخص:.*\\n?/,''):type==='followup'?(fd.details||''):item?.desc||'';$('entryPerson').value=type==='appointment'?((item?.desc||'').match(/^الشخص:\\s*(.*)$/m)||[])[1]||'':fd?.person||'';$('entryDepartment').value=fd?.department||'';$('entryLastContact').value=fd?.last||'';$('entryNextStep').value=fd?.next||'';$('entryFollowStatus').value=fd?.status||'waiting';$('entryCategory').value=item?.category||'work';$('entryDate').value=item?.due?new Date(item.due).toISOString().slice(0,16):'';$('entryStatus').value=item?.status||'new';$('descField').style.display=(type==='idea'||type==='appointment'||type==='followup')?'grid':'none';$('categoryField').style.display=type==='task'?'grid':'none';$('dateField').style.display=(type==='task'||type==='appointment'||type==='followup')?'grid':'none';$('entryDate').required=type==='appointment';$('personField').style.display=(type==='appointment'||type==='followup')?'grid':'none';$('entryPerson').required=type==='appointment'||type==='followup';$('departmentField').style.display=type==='followup'?'grid':'none';$('lastContactField').style.display=type==='followup'?'grid':'none';$('dateField').querySelector('label').textContent=type==='followup'?'موعد المتابعة القادمة':'التاريخ والوقت';$('nextStepField').style.display=type==='followup'?'grid':'none';$('followStatusField').style.display=type==='followup'?'grid':'none';$('statusField').style.display=type==='idea'?'grid':'none';$('modalBack').classList.add('show');$('entryName').focus()}
 function closeModal(){$('modalBack').classList.remove('show')}
@@ -322,7 +339,18 @@ function render(){
  const isOverdue=t=>!t.done&&!!t.due&&new Date(t.due).getTime()<Date.now();
  const ordered=[...tasks].sort((a,b)=>Number(isOverdue(b))-Number(isOverdue(a))||(a.due?new Date(a.due).getTime():Infinity)-(b.due?new Date(b.due).getTime():Infinity));
  const regularTasks=tasks.filter(t=>!['appointment','followup'].includes(t.category));let done=regularTasks.filter(t=>t.done).length,pct=regularTasks.length?Math.round(done/regularTasks.length*100):0;
- $('sTotal').textContent=regularTasks.length;$('sDone').textContent=done;$('sPending').textContent=regularTasks.length-done;$('sIdeas').textContent=ideas.length;$('sOverdue').textContent=regularTasks.filter(isOverdue).length;$('percent').textContent=pct+'%';$('progressBar').style.width=pct+'%';
+ const appointments=tasks.filter(t=>t.category==='appointment');
+ const followups=tasks.filter(t=>t.category==='followup');
+ const isLateAppointment=a=>!!a.due&&new Date(a.due).getTime()<Date.now();
+ const isLateFollowup=x=>{const d=parseFollowup(x.desc||'');return !!x.due&&new Date(x.due).getTime()<Date.now()&&d.status!=='done'};
+ $('homeIdeasCount').textContent=ideas.length;
+ $('homeTasksCount').textContent=regularTasks.filter(t=>!t.done).length;
+ $('homeAppointmentsCount').textContent=appointments.length;
+ $('homeFollowupsCount').textContent=followups.length;
+ document.querySelector('[data-shortcut="tasks"]').classList.toggle('has-overdue',regularTasks.some(isOverdue));
+ document.querySelector('[data-shortcut="appointments"]').classList.toggle('has-overdue',appointments.some(isLateAppointment));
+ document.querySelector('[data-shortcut="followups"]').classList.toggle('has-overdue',followups.some(isLateFollowup));
+ $('percent').textContent=pct+'%';$('progressBar').style.width=pct+'%';
  $('dashTasks').innerHTML=ordered.filter(t=>!['appointment','followup'].includes(t.category)&&!t.done).slice(0,5).map(t=>taskHTML(t,true)).join('')||'<div class="empty">ما عندك مهام متبقية 🎉</div>';
  $('dashIdeas').innerHTML=ideas.slice(0,3).map(i=>ideaHTML(i,true)).join('')||'<div class="empty">أضف أول فكرة لك ✨</div>';
  let q=$('taskSearch').value.toLowerCase(),f=$('taskFilter').value;
