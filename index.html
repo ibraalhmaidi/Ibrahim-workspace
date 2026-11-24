@@ -181,6 +181,7 @@ window.OneSignalDeferred.push(async function(OneSignal) {
       <button class="active" data-view="dashboard"><span class="ico">⌂</span><span>الرئيسية</span></button>
       <button data-view="ideas"><span class="ico">✧</span><span>أفكاري</span></button>
       <button data-view="tasks"><span class="ico">☷</span><span>مهامي</span></button>
+      <button data-view="appointments"><span class="ico">◷</span><span>مواعيدي</span></button>
     </nav>
   </div>
   <div class="side-note"><b>خطوة صغيرة كل يوم</b><p>دوّن الفكرة قبل أن تنساها، وأنجز المهمة قبل أن تتراكم.</p></div>
@@ -210,6 +211,9 @@ window.OneSignalDeferred.push(async function(OneSignal) {
   <section class="view" id="tasks">
     <div class="panel"><div class="panel-head"><h3>كل المهام</h3><button class="primary" id="addTask">＋ مهمة جديدة</button></div><div class="toolbar"><input class="search" id="taskSearch" placeholder="ابحث عن مهمة..."><select class="filter" id="taskFilter"><option value="all">كل المهام</option><option value="pending">غير منجزة</option><option value="overdue">متأخرة</option><option value="done">منجزة</option></select></div><div class="rows" id="allTasks"></div></div>
   </section>
+  <section class="view" id="appointments">
+    <div class="panel"><div class="panel-head"><h3>مواعيدي واجتماعاتي</h3><button class="primary" id="addAppointment">＋ موعد جديد</button></div><p class="subtle-note">سجّل اجتماعاتك ومواعيدك مع الأشخاص وتابع تفاصيلها في مكان واحد.</p><div class="rows" id="allAppointments"></div></div>
+  </section>
   <section class="view" id="ideas">
     <div class="panel"><div class="panel-head"><h3>بنك الأفكار</h3><button class="primary" id="addIdea">＋ فكرة جديدة</button></div><div class="toolbar"><input class="search" id="ideaSearch" placeholder="ابحث في أفكارك..."><select class="filter" id="ideaFilter"><option value="all">كل الحالات</option><option value="new">جديدة</option><option value="progress">قيد التنفيذ</option><option value="done">مكتملة</option></select></div><div class="rows" id="allIdeas"></div></div>
   </section>
@@ -220,10 +224,12 @@ window.OneSignalDeferred.push(async function(OneSignal) {
 <div class="field"><label for="entryName">العنوان</label><input id="entryName" required maxlength="100" placeholder="اكتب عنوانًا واضحًا"></div>
 <div class="field" id="descField"><label for="entryDesc">الوصف / التفاصيل</label><textarea id="entryDesc" placeholder="أضف التفاصيل أو المتطلبات..."></textarea></div>
 <div class="field" id="categoryField"><label for="entryCategory">التصنيف</label><select id="entryCategory"><option value="work">عمل</option><option value="study">دراسة</option><option value="personal">شخصي</option></select></div>
-<div class="field" id="dateField"><label for="entryDate">موعد التذكير (اختياري)</label><input id="entryDate" type="datetime-local"></div>
+<div class="field" id="dateField"><label for="entryDate">التاريخ والوقت</label><input id="entryDate" type="datetime-local"></div>
+<div class="field" id="personField" style="display:none"><label for="entryPerson">مع من الموعد؟</label><input id="entryPerson" maxlength="100" placeholder="اسم الشخص أو الجهة"></div>
 <div class="field" id="statusField" style="display:none"><label for="entryStatus">حالة الفكرة</label><select id="entryStatus"><option value="new">جديدة</option><option value="progress">قيد التنفيذ</option><option value="done">مكتملة</option></select></div>
 <div class="modal-actions"><button type="button" class="secondary" id="cancelModal">إلغاء</button><button class="primary" type="submit">حفظ</button></div>
 </form></div></div>
+<button id="floatingQuickAdd" class="floating-quick-add" aria-label="إضافة سريعة" title="إضافة سريعة">＋</button>
 <div class="toast" id="toast"></div>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -269,19 +275,20 @@ $('forgotPassword').onclick=async()=>{
  const {error}=await db.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+window.location.pathname});
  $('authMessage').textContent=error?'تعذر إرسال الرابط: '+error.message:'تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني.';
 };
-function go(v){document.querySelectorAll('.view').forEach(x=>x.classList.toggle('active',x.id===v));document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.view===v));$('pageTitle').textContent=v==='dashboard'?'مساحتك | خطط، أنجز، وتطوّر':v==='tasks'?'قائمة مهامي':'أفكاري الجديدة';}
+function go(v){document.querySelectorAll('.view').forEach(x=>x.classList.toggle('active',x.id===v));document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.view===v));$('pageTitle').textContent=({'dashboard':'مساحتك | خطط، أنجز، وتطوّر','tasks':'قائمة مهامي','ideas':'أفكاري الجديدة','appointments':'مواعيدي واجتماعاتي'}[v]||'مساحة إبراهيم');}
 document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>go(b.dataset.view));document.querySelectorAll('[data-goto]').forEach(b=>b.onclick=()=>go(b.dataset.goto));
-function openModal(type,item=null){$('entryType').value=type;$('entryId').value=item?.id||'';$('modalTitle').textContent=(item?'تعديل ':'إضافة ')+(type==='task'?'مهمة':'فكرة');$('entryName').value=item?.title||'';$('entryDesc').value=item?.desc||'';$('entryCategory').value=item?.category||'work';$('entryDate').value=item?.due?new Date(item.due).toISOString().slice(0,16):'';$('entryStatus').value=item?.status||'new';$('descField').style.display=type==='idea'?'grid':'none';$('categoryField').style.display=type==='task'?'grid':'none';$('dateField').style.display=type==='task'?'grid':'none';$('statusField').style.display=type==='idea'?'grid':'none';$('modalBack').classList.add('show');$('entryName').focus()}
+function openModal(type,item=null){$('entryType').value=type;$('entryId').value=item?.id||'';const label=type==='task'?'مهمة':type==='appointment'?'موعد':'فكرة';$('modalTitle').textContent=(item?'تعديل ':'إضافة ')+label;$('entryName').value=item?.title||'';$('entryDesc').value=type==='appointment'?(item?.desc||'').replace(/^الشخص:.*\n?/,''):item?.desc||'';$('entryPerson').value=type==='appointment'?((item?.desc||'').match(/^الشخص:\s*(.*)$/m)||[])[1]||'':'';$('entryCategory').value=item?.category||'work';$('entryDate').value=item?.due?new Date(item.due).toISOString().slice(0,16):'';$('entryStatus').value=item?.status||'new';$('descField').style.display=(type==='idea'||type==='appointment')?'grid':'none';$('categoryField').style.display=type==='task'?'grid':'none';$('dateField').style.display=(type==='task'||type==='appointment')?'grid':'none';$('entryDate').required=type==='appointment';$('personField').style.display=type==='appointment'?'grid':'none';$('entryPerson').required=type==='appointment';$('statusField').style.display=type==='idea'?'grid':'none';$('modalBack').classList.add('show');$('entryName').focus()}
 function closeModal(){$('modalBack').classList.remove('show')}
 $('cancelModal').onclick=closeModal;$('modalBack').onclick=e=>{if(e.target===$('modalBack'))closeModal()};
-$('quickAdd').onclick=()=>openModal('task');$('addTask').onclick=()=>openModal('task');$('addIdea').onclick=()=>openModal('idea');
+$('quickAdd').onclick=()=>openModal('task');$('floatingQuickAdd').onclick=()=>openModal('task');$('addTask').onclick=()=>openModal('task');$('addIdea').onclick=()=>openModal('idea');$('addAppointment').onclick=()=>openModal('appointment');
 $('entryForm').onsubmit=async e=>{
  e.preventDefault();if(!user){showAuth();return}
  const type=$('entryType').value,id=$('entryId').value||crypto.randomUUID(),old=tasks.find(x=>x.id===id);
  const title=$('entryName').value.trim(),desc=$('entryDesc').value.trim();
- if(type==='task'){
+ if(type==='task'||type==='appointment'){
   const due=$('entryDate').value?new Date($('entryDate').value).toISOString():null;
-  const row={id,user_id:user.id,title,description:desc,category:$('entryCategory').value,due,done:old?.done||false,updated_at:new Date().toISOString()};
+  const appointmentDesc=type==='appointment'?('الشخص: '+$('entryPerson').value.trim()+(desc?'\n'+desc:'')):desc;
+  const row={id,user_id:user.id,title,description:appointmentDesc,category:type==='appointment'?'appointment':$('entryCategory').value,due,done:old?.done||false,updated_at:new Date().toISOString()};
   const {error}=await db.from('tasks').upsert(row);if(error){toast('تعذر الحفظ: '+error.message);return}
  }else{
   const row={id,user_id:user.id,title,description:desc,status:$('entryStatus').value,updated_at:new Date().toISOString()};
@@ -295,10 +302,13 @@ function taskHTML(t,compact=false){
  const categoryLabel=({work:'عمل',study:'دراسة',personal:'شخصي'}[t.category]||'عام');
  return `<div class="${compact?'task':'row-card'}${overdueClass}"><button class="check ${t.done?'done':''}" data-check="${esc(t.id)}" aria-label="إنجاز">${t.done?'✓':''}</button><div class="task-main"><div class="task-title ${t.done?'done':''}">${esc(t.title)}</div><div class="task-meta">${categoryLabel} · ${t.due?fmt(t.due):'بدون موعد'}${overdue?' · متأخرة':''}</div>${compact?'':`<p>${esc(t.desc)}</p>`}</div>${compact?`<span class="tag ${overdue?'overdue-tag':t.category}">${overdue?'متأخرة':categoryLabel}</span>`:`<div class="row-actions">${overdue?'<span class="tag overdue-tag">متأخرة</span>':''}<button class="tiny" data-edit-task="${esc(t.id)}">تعديل</button><button class="tiny" data-del-task="${esc(t.id)}">حذف</button></div>`}</div>`;
 }
+function appointmentHTML(a){const person=((a.desc||'').match(/^الشخص:\s*(.*)$/m)||[])[1]||'غير محدد';const details=(a.desc||'').replace(/^الشخص:.*\n?/,'');const past=a.due&&new Date(a.due).getTime()<Date.now();return '<div class="row-card"><div class="task-main"><div class="task-title">'+esc(a.title)+'</div><div class="task-meta">'+esc(person)+' · '+fmt(a.due)+(past?' · انتهى الموعد':'')+'</div>'+(details?'<p>'+esc(details)+'</p>':'')+'</div><div class="row-actions"><button class="tiny" data-edit-appointment="'+esc(a.id)+'">تعديل</button><button class="tiny" data-del-appointment="'+esc(a.id)+'">حذف</button></div></div>'}
 function ideaHTML(i,compact=false){return `<div class="${compact?'idea':'row-card'}"><div class="task-main"><div class="idea-top"><span class="idea-title">${esc(i.title)}</span><span class="tag">${({new:'جديدة',progress:'قيد التنفيذ',done:'مكتملة'}[i.status])}</span></div><p class="idea-desc">${esc(i.desc||'لا توجد تفاصيل بعد')}</p>${compact?'':`<div class="row-actions"><button class="tiny" data-edit-idea="${esc(i.id)}">تعديل</button><button class="tiny" data-del-idea="${esc(i.id)}">حذف</button></div>`}</div></div>`}
 async function bind(){
  document.querySelectorAll('[data-check]').forEach(b=>b.onclick=async()=>{const t=tasks.find(x=>x.id===b.dataset.check);if(!t)return;const {error}=await db.from('tasks').update({done:!t.done,updated_at:new Date().toISOString()}).eq('id',t.id);if(error)toast(error.message);else await loadData()});
  document.querySelectorAll('[data-edit-task]').forEach(b=>b.onclick=()=>openModal('task',tasks.find(x=>x.id===b.dataset.editTask)));
+ document.querySelectorAll('[data-edit-appointment]').forEach(b=>b.onclick=()=>openModal('appointment',tasks.find(x=>x.id===b.dataset.editAppointment)));
+ document.querySelectorAll('[data-del-appointment]').forEach(b=>b.onclick=async()=>{if(confirm('حذف الموعد؟')){const {error}=await db.from('tasks').delete().eq('id',b.dataset.delAppointment);if(error)toast(error.message);else await loadData()}});
  document.querySelectorAll('[data-del-task]').forEach(b=>b.onclick=async()=>{if(confirm('حذف المهمة؟')){const {error}=await db.from('tasks').delete().eq('id',b.dataset.delTask);if(error)toast(error.message);else await loadData()}});
  document.querySelectorAll('[data-edit-idea]').forEach(b=>b.onclick=()=>openModal('idea',ideas.find(x=>x.id===b.dataset.editIdea)));
  document.querySelectorAll('[data-del-idea]').forEach(b=>b.onclick=async()=>{if(confirm('حذف الفكرة؟')){const {error}=await db.from('ideas').delete().eq('id',b.dataset.delIdea);if(error)toast(error.message);else await loadData()}});
@@ -311,7 +321,9 @@ function render(){
  $('dashTasks').innerHTML=ordered.filter(t=>!t.done).slice(0,5).map(t=>taskHTML(t,true)).join('')||'<div class="empty">ما عندك مهام متبقية 🎉</div>';
  $('dashIdeas').innerHTML=ideas.slice(0,3).map(i=>ideaHTML(i,true)).join('')||'<div class="empty">أضف أول فكرة لك ✨</div>';
  let q=$('taskSearch').value.toLowerCase(),f=$('taskFilter').value;
- $('allTasks').innerHTML=ordered.filter(t=>(!q||t.title.toLowerCase().includes(q))&&(f==='all'||(f==='done'?t.done:f==='overdue'?isOverdue(t):!t.done))).map(t=>taskHTML(t)).join('')||'<div class="empty">لا توجد مهام مطابقة</div>';
+ $('allTasks').innerHTML=ordered.filter(t=>t.category!=='appointment'&&(!q||t.title.toLowerCase().includes(q))&&(f==='all'||(f==='done'?t.done:f==='overdue'?isOverdue(t):!t.done))).map(t=>taskHTML(t)).join('')||'<div class="empty">لا توجد مهام مطابقة</div>';
+ const appts=tasks.filter(t=>t.category==='appointment').sort((a,b)=>new Date(a.due||0)-new Date(b.due||0));
+ $('allAppointments').innerHTML=appts.map(a=>appointmentHTML(a)).join('')||'<div class="empty">لا توجد مواعيد مسجلة. أضف موعدك الأول ✨</div>';
  q=$('ideaSearch').value.toLowerCase();f=$('ideaFilter').value;
  $('allIdeas').innerHTML=ideas.filter(i=>(!q||i.title.toLowerCase().includes(q))&&(f==='all'||i.status===f)).map(i=>ideaHTML(i)).join('')||'<div class="empty">لا توجد أفكار مطابقة</div>';bind()
 }
