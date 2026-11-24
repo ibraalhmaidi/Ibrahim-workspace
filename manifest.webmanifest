@@ -1,0 +1,20 @@
+{
+  "name": "مساحة إبراهيم",
+  "short_name": "مساحة إبراهيم",
+  "description": "مساحتك للتخطيط والإنجاز",
+  "lang": "ar",
+  "dir": "rtl",
+  "start_url": "/Ibrahim-workspace/",
+  "scope": "/Ibrahim-workspace/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#ffffff",
+  "icons": [
+    {
+      "src": "/Ibrahim-workspace/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
