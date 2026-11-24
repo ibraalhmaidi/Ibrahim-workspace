@@ -126,7 +126,7 @@ window.OneSignalDeferred.push(async function(OneSignal) {
 <main>
   <header class="top">
     <div><div class="eyebrow" id="today"></div><div class="sync-status" id="syncStatus">جاري الاتصال...</div><h1 id="pageTitle">صباح الإنجاز 👋</h1></div>
-    <div class="top-actions"><button class="icon-btn" title="تفعيل التنبيهات" id="notifyBtn">♧</button><button class="primary" id="quickAdd">＋ إضافة جديدة</button><div class="avatar">إ</div></div>
+    <div class="top-actions"><button class="icon-btn" title="تفعيل التنبيهات" id="notifyBtn">♧</button><button class="secondary" id="testNotifyBtn" type="button">اختبار الإشعارات</button><button class="primary" id="quickAdd">＋ إضافة جديدة</button><div class="avatar">إ</div></div>
   </header>
   <section class="view active" id="dashboard">
     <div class="welcome"><div><h2>أهلًا بك في مساحتك ✨</h2><p>رتّب أفكارك، تابع مهامك، وخلي كل شيء واضح قدامك.</p></div><div class="welcome-art">☁️</div></div>
@@ -242,6 +242,7 @@ function render(){
  $('allIdeas').innerHTML=ideas.filter(i=>(!q||i.title.toLowerCase().includes(q))&&(f==='all'||i.status===f)).map(i=>ideaHTML(i)).join('')||'<div class="empty">لا توجد أفكار مطابقة</div>';bind()
 }
 ['taskSearch','taskFilter','ideaSearch','ideaFilter'].forEach(id=>$(id).addEventListener('input',render));
+$('testNotifyBtn').onclick=async()=>{try{if(!('Notification' in window)||Notification.permission!=='granted'){toast('فعّل الإشعارات أولاً من زر الجرس');return}const reg=await navigator.serviceWorker.ready;await reg.showNotification('مساحة إبراهيم',{body:'هذا إشعار تجريبي للتأكد من ظهور التنبيهات على جهازك.',icon:'/Ibrahim-workspace/icon.svg',badge:'/Ibrahim-workspace/icon.svg',tag:'ibrahim-test-notification'});toast('تم إرسال إشعار الاختبار للجهاز')}catch(e){toast('تعذر عرض الإشعار: '+(e?.message||String(e)))}};
 $('notifyBtn').onclick=async()=>{toast('جارٍ تفعيل الإشعارات...');if(window.__oneSignalInitError){toast('خطأ التهيئة: '+window.__oneSignalInitError);return}if(window.__oneSignalScriptFailed){toast('تعذر تحميل ملف OneSignal');return}if(!window.__oneSignalScriptLoaded){toast('ملف OneSignal لم يكتمل تحميله');return}if(!window.__oneSignalReady||!window.OneSignalInstance){toast('OneSignal لم يكتمل تشغيله؛ أعد فتح الموقع بعد دقيقة');return}try{const OS=window.OneSignalInstance;await OS.Notifications.requestPermission();await OS.User.PushSubscription.optIn();const sub=OS.User.PushSubscription;if(sub.optedIn&&sub.id){toast('تم تفعيل الإشعارات بنجاح');}else{toast('لم يكتمل الاشتراك. حالة الإذن: '+OS.Notifications.permission+' — الاشتراك: '+sub.optedIn+' — المعرّف: '+(sub.id||'غير موجود'));}}catch(e){toast('تعذر تفعيل الإشعارات: '+(e?.message||String(e)))}};
 async function loadData(){
  setStatus('جارٍ تحميل بياناتك السحابية...');
