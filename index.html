@@ -67,8 +67,24 @@ body{background:#fff;color:#263746}
 #percent{color:#159fc2!important}
 
 </style>
+
+<style>
+.auth-screen{position:fixed;inset:0;background:#f7fcfd;z-index:20;display:none;place-items:center;padding:20px}
+.auth-screen.show{display:grid}.auth-card{width:min(420px,100%);background:#fff;border:1px solid #e2f0f4;border-radius:22px;padding:26px;box-shadow:0 15px 45px #194b5f12}
+.auth-card h2{color:#159fc2;margin:0 0 8px}.auth-card p{color:#84939d;font-size:13px;line-height:1.8}
+.auth-card input{width:100%;padding:12px;border:1px solid #e4edf1;border-radius:11px;margin:7px 0 12px;direction:ltr;text-align:left}
+.auth-actions{display:flex;gap:8px}.auth-actions button{flex:1}.auth-msg{font-size:12px;color:#159fc2;min-height:20px}
+.sync-status{font-size:10px;color:#159fc2;margin-top:5px}
+</style>
 </head>
 <body>
+<div class="auth-screen" id="authScreen"><div class="auth-card">
+  <h2>مساحة إبراهيم</h2><p>سجّل دخولك للوصول إلى مهامك وأفكارك من جميع أجهزتك.</p>
+  <label>البريد الإلكتروني</label><input id="authEmail" type="email" autocomplete="email" placeholder="name@example.com">
+  <label>كلمة المرور</label><input id="authPassword" type="password" autocomplete="current-password" placeholder="8 أحرف على الأقل">
+  <div class="auth-actions"><button class="primary" id="loginBtn">تسجيل الدخول</button><button class="secondary" id="signupBtn">إنشاء حساب</button></div>
+  <p class="auth-msg" id="authMessage"></p>
+</div></div>
 <div class="app">
 <aside class="sidebar">
   <div class="brand"><div class="logo">✦</div><div><strong>مساحة إبراهيم</strong><small>مساحتك للتخطيط والإنجاز</small></div></div>
@@ -84,7 +100,7 @@ body{background:#fff;color:#263746}
 </aside>
 <main>
   <header class="top">
-    <div><div class="eyebrow" id="today"></div><h1 id="pageTitle">صباح الإنجاز 👋</h1></div>
+    <div><div class="eyebrow" id="today"></div><div class="sync-status" id="syncStatus">جاري الاتصال...</div><h1 id="pageTitle">صباح الإنجاز 👋</h1></div>
     <div class="top-actions"><button class="icon-btn" title="تفعيل التنبيهات" id="notifyBtn">♧</button><button class="primary" id="quickAdd">＋ إضافة جديدة</button><div class="avatar">إ</div></div>
   </header>
   <section class="view active" id="dashboard">
@@ -122,29 +138,91 @@ body{background:#fff;color:#263746}
 <div class="modal-actions"><button type="button" class="secondary" id="cancelModal">إلغاء</button><button class="primary" type="submit">حفظ</button></div>
 </form></div></div>
 <div class="toast" id="toast"></div>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 const $=id=>document.getElementById(id);
-let tasks=JSON.parse(localStorage.getItem('ib_tasks')||'[]'), ideas=JSON.parse(localStorage.getItem('ib_ideas')||'[]'), notified=new Set(JSON.parse(localStorage.getItem('ib_notified')||'[]'));
-const save=()=>{localStorage.setItem('ib_tasks',JSON.stringify(tasks));localStorage.setItem('ib_ideas',JSON.stringify(ideas));localStorage.setItem('ib_notified',JSON.stringify([...notified]));render()};
+const SUPABASE_URL='https://jcxdlcyolsbmmklcbwhb.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY='sb_publishable_h1qyfqlymyq4xkDcWZiFgg_pFKqdE4k';
+const db=window.supabase.createClient(SUPABASE_URL,SUPABASE_PUBLISHABLE_KEY);
+let user=null,tasks=[],ideas=[],notified=new Set(),channel=null;
+const localTasks=()=>JSON.parse(localStorage.getItem('ib_tasks')||'[]');
+const localIdeas=()=>JSON.parse(localStorage.getItem('ib_ideas')||'[]');
+const setStatus=t=>{$('syncStatus').textContent=t};
 const esc=s=>String(s||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const fmt=d=>d?new Date(d).toLocaleString('ar-SA',{month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):'بدون موعد';
-$('today').textContent=new Date().toLocaleDateString('ar-SA',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
+const fmt=d=>d?new Date(d).toLocaleString('ar-SA-u-ca-gregory',{calendar:'gregory',year:'numeric',month:'short',day:'numeric',hour:'2-digit',minute:'2-digit'}):'بدون موعد';
+$('today').textContent=new Date().toLocaleDateString('ar-SA-u-ca-gregory',{calendar:'gregory',weekday:'long',year:'numeric',month:'long',day:'numeric'});
 function toast(t){$('toast').textContent=t;$('toast').classList.add('show');setTimeout(()=>$('toast').classList.remove('show'),2400)}
+function showAuth(msg=''){$('authScreen').classList.add('show');$('authMessage').textContent=msg}
+function hideAuth(){$('authScreen').classList.remove('show')}
+async function signIn(mode){
+ const email=$('authEmail').value.trim(),password=$('authPassword').value;
+ if(!email||!password){$('authMessage').textContent='أدخل البريد الإلكتروني وكلمة المرور.';return}
+ $('authMessage').textContent='جارٍ التنفيذ...';
+ const result=mode==='signup'?await db.auth.signUp({email,password}):await db.auth.signInWithPassword({email,password});
+ if(result.error){$('authMessage').textContent=result.error.message;return}
+ if(mode==='signup'&&!result.data.session){$('authMessage').textContent='تم إنشاء الحساب. افتح رسالة التأكيد في بريدك ثم سجّل الدخول.';return}
+ user=result.data.user;hideAuth();await loadData();
+}
+$('loginBtn').onclick=()=>signIn('login');$('signupBtn').onclick=()=>signIn('signup');
 function go(v){document.querySelectorAll('.view').forEach(x=>x.classList.toggle('active',x.id===v));document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.view===v));$('pageTitle').textContent=v==='dashboard'?'صباح الإنجاز 👋':v==='tasks'?'قائمة مهامي':'أفكاري الجديدة';}
 document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>go(b.dataset.view));document.querySelectorAll('[data-goto]').forEach(b=>b.onclick=()=>go(b.dataset.goto));
-function openModal(type,item=null){$('entryType').value=type;$('entryId').value=item?.id||'';$('modalTitle').textContent=(item?'تعديل ':'إضافة ')+(type==='task'?'مهمة':'فكرة');$('entryName').value=item?.title||'';$('entryDesc').value=item?.desc||'';$('entryCategory').value=item?.category||'work';$('entryDate').value=item?.due||'';$('entryStatus').value=item?.status||'new';$('descField').style.display=type==='idea'?'grid':'none';$('categoryField').style.display=type==='task'?'grid':'none';$('dateField').style.display=type==='task'?'grid':'none';$('statusField').style.display=type==='idea'?'grid':'none';$('modalBack').classList.add('show');$('entryName').focus()}
+function openModal(type,item=null){$('entryType').value=type;$('entryId').value=item?.id||'';$('modalTitle').textContent=(item?'تعديل ':'إضافة ')+(type==='task'?'مهمة':'فكرة');$('entryName').value=item?.title||'';$('entryDesc').value=item?.desc||'';$('entryCategory').value=item?.category||'work';$('entryDate').value=item?.due?new Date(item.due).toISOString().slice(0,16):'';$('entryStatus').value=item?.status||'new';$('descField').style.display=type==='idea'?'grid':'none';$('categoryField').style.display=type==='task'?'grid':'none';$('dateField').style.display=type==='task'?'grid':'none';$('statusField').style.display=type==='idea'?'grid':'none';$('modalBack').classList.add('show');$('entryName').focus()}
 function closeModal(){$('modalBack').classList.remove('show')}
 $('cancelModal').onclick=closeModal;$('modalBack').onclick=e=>{if(e.target===$('modalBack'))closeModal()};
 $('quickAdd').onclick=()=>openModal('task');$('addTask').onclick=()=>openModal('task');$('addIdea').onclick=()=>openModal('idea');
-$('entryForm').onsubmit=e=>{e.preventDefault();let type=$('entryType').value,id=$('entryId').value||String(Date.now()),obj={id,title:$('entryName').value.trim(),desc:$('entryDesc').value.trim(),category:$('entryCategory').value,due:$('entryDate').value,status:$('entryStatus').value};if(type==='task'){obj.done=false;let old=tasks.find(x=>x.id===id);if(old)obj.done=old.done;tasks=old?tasks.map(x=>x.id===id?{...old,...obj}:x):[obj,...tasks]}else{ideas=ideas.some(x=>x.id===id)?ideas.map(x=>x.id===id?obj:x):[obj,...ideas]}closeModal();save();toast('تم الحفظ بنجاح ✨')};
-function taskHTML(t,compact=false){return `<div class="${compact?'task':'row-card'}"><button class="check ${t.done?'done':''}" data-check="${t.id}" aria-label="إنجاز">${t.done?'✓':''}</button><div class="task-main"><div class="task-title ${t.done?'done':''}">${esc(t.title)}</div><div class="task-meta">${({work:'عمل',study:'دراسة',personal:'شخصي'}[t.category]||'عام')} · ${t.due?fmt(t.due):'بدون موعد'}</div>${compact?'':`<p>${esc(t.desc)}</p>`}</div>${compact?`<span class="tag ${t.category}">${({work:'عمل',study:'دراسة',personal:'شخصي'}[t.category])}</span>`:`<div class="row-actions"><button class="tiny" data-edit-task="${t.id}">تعديل</button><button class="tiny" data-del-task="${t.id}">حذف</button></div>`}</div>`}
-function ideaHTML(i,compact=false){return `<div class="${compact?'idea':'row-card'}"><div class="task-main"><div class="idea-top"><span class="idea-title">${esc(i.title)}</span><span class="tag">${({new:'جديدة',progress:'قيد التنفيذ',done:'مكتملة'}[i.status])}</span></div><p class="idea-desc">${esc(i.desc||'لا توجد تفاصيل بعد')}</p>${compact?'':`<div class="row-actions"><button class="tiny" data-edit-idea="${i.id}">تعديل</button><button class="tiny" data-del-idea="${i.id}">حذف</button></div>`}</div></div>`}
-function bind(){document.querySelectorAll('[data-check]').forEach(b=>b.onclick=()=>{tasks=tasks.map(t=>t.id===b.dataset.check?{...t,done:!t.done}:t);save()});document.querySelectorAll('[data-edit-task]').forEach(b=>b.onclick=()=>openModal('task',tasks.find(t=>t.id===b.dataset.editTask)));document.querySelectorAll('[data-del-task]').forEach(b=>b.onclick=()=>{if(confirm('حذف المهمة؟')){tasks=tasks.filter(t=>t.id!==b.dataset.delTask);save()}});document.querySelectorAll('[data-edit-idea]').forEach(b=>b.onclick=()=>openModal('idea',ideas.find(i=>i.id===b.dataset.editIdea)));document.querySelectorAll('[data-del-idea]').forEach(b=>b.onclick=()=>{if(confirm('حذف الفكرة؟')){ideas=ideas.filter(i=>i.id!==b.dataset.delIdea);save()}})}
-function render(){let done=tasks.filter(t=>t.done).length,pct=tasks.length?Math.round(done/tasks.length*100):0;$('sTotal').textContent=tasks.length;$('sDone').textContent=done;$('sPending').textContent=tasks.length-done;$('sIdeas').textContent=ideas.length;$('percent').textContent=pct+'%';$('progressBar').style.width=pct+'%';$('dashTasks').innerHTML=tasks.filter(t=>!t.done).slice(0,4).map(t=>taskHTML(t,true)).join('')||'<div class="empty">ما عندك مهام متبقية 🎉</div>';$('dashIdeas').innerHTML=ideas.slice(0,3).map(i=>ideaHTML(i,true)).join('')||'<div class="empty">أضف أول فكرة لك ✨</div>';let q=$('taskSearch').value.toLowerCase(),f=$('taskFilter').value;$('allTasks').innerHTML=tasks.filter(t=>(!q||t.title.toLowerCase().includes(q))&&(f==='all'||(f==='done'?t.done:!t.done))).map(t=>taskHTML(t)).join('')||'<div class="empty">لا توجد مهام مطابقة</div>';q=$('ideaSearch').value.toLowerCase();f=$('ideaFilter').value;$('allIdeas').innerHTML=ideas.filter(i=>(!q||i.title.toLowerCase().includes(q))&&(f==='all'||i.status===f)).map(i=>ideaHTML(i)).join('')||'<div class="empty">لا توجد أفكار مطابقة</div>';bind()}
+$('entryForm').onsubmit=async e=>{
+ e.preventDefault();if(!user){showAuth();return}
+ const type=$('entryType').value,id=$('entryId').value||crypto.randomUUID(),old=tasks.find(x=>x.id===id);
+ const title=$('entryName').value.trim(),desc=$('entryDesc').value.trim();
+ if(type==='task'){
+  const due=$('entryDate').value?new Date($('entryDate').value).toISOString():null;
+  const row={id,user_id:user.id,title,description:desc,category:$('entryCategory').value,due,done:old?.done||false,updated_at:new Date().toISOString()};
+  const {error}=await db.from('tasks').upsert(row);if(error){toast('تعذر الحفظ: '+error.message);return}
+ }else{
+  const row={id,user_id:user.id,title,description:desc,status:$('entryStatus').value,updated_at:new Date().toISOString()};
+  const {error}=await db.from('ideas').upsert(row);if(error){toast('تعذر الحفظ: '+error.message);return}
+ }
+ closeModal();await loadData();toast('تم الحفظ والمزامنة ✨')
+};
+function taskHTML(t,compact=false){return `<div class="${compact?'task':'row-card'}"><button class="check ${t.done?'done':''}" data-check="${esc(t.id)}" aria-label="إنجاز">${t.done?'✓':''}</button><div class="task-main"><div class="task-title ${t.done?'done':''}">${esc(t.title)}</div><div class="task-meta">${({work:'عمل',study:'دراسة',personal:'شخصي'}[t.category]||'عام')} · ${t.due?fmt(t.due):'بدون موعد'}</div>${compact?'':`<p>${esc(t.desc)}</p>`}</div>${compact?`<span class="tag ${t.category}">${({work:'عمل',study:'دراسة',personal:'شخصي'}[t.category])}</span>`:`<div class="row-actions"><button class="tiny" data-edit-task="${esc(t.id)}">تعديل</button><button class="tiny" data-del-task="${esc(t.id)}">حذف</button></div>`}</div>`}
+function ideaHTML(i,compact=false){return `<div class="${compact?'idea':'row-card'}"><div class="task-main"><div class="idea-top"><span class="idea-title">${esc(i.title)}</span><span class="tag">${({new:'جديدة',progress:'قيد التنفيذ',done:'مكتملة'}[i.status])}</span></div><p class="idea-desc">${esc(i.desc||'لا توجد تفاصيل بعد')}</p>${compact?'':`<div class="row-actions"><button class="tiny" data-edit-idea="${esc(i.id)}">تعديل</button><button class="tiny" data-del-idea="${esc(i.id)}">حذف</button></div>`}</div></div>`}
+async function bind(){
+ document.querySelectorAll('[data-check]').forEach(b=>b.onclick=async()=>{const t=tasks.find(x=>x.id===b.dataset.check);if(!t)return;const {error}=await db.from('tasks').update({done:!t.done,updated_at:new Date().toISOString()}).eq('id',t.id);if(error)toast(error.message);else await loadData()});
+ document.querySelectorAll('[data-edit-task]').forEach(b=>b.onclick=()=>openModal('task',tasks.find(x=>x.id===b.dataset.editTask)));
+ document.querySelectorAll('[data-del-task]').forEach(b=>b.onclick=async()=>{if(confirm('حذف المهمة؟')){const {error}=await db.from('tasks').delete().eq('id',b.dataset.delTask);if(error)toast(error.message);else await loadData()}});
+ document.querySelectorAll('[data-edit-idea]').forEach(b=>b.onclick=()=>openModal('idea',ideas.find(x=>x.id===b.dataset.editIdea)));
+ document.querySelectorAll('[data-del-idea]').forEach(b=>b.onclick=async()=>{if(confirm('حذف الفكرة؟')){const {error}=await db.from('ideas').delete().eq('id',b.dataset.delIdea);if(error)toast(error.message);else await loadData()}});
+}
+function render(){
+ let done=tasks.filter(t=>t.done).length,pct=tasks.length?Math.round(done/tasks.length*100):0;
+ $('sTotal').textContent=tasks.length;$('sDone').textContent=done;$('sPending').textContent=tasks.length-done;$('sIdeas').textContent=ideas.length;$('percent').textContent=pct+'%';$('progressBar').style.width=pct+'%';
+ $('dashTasks').innerHTML=tasks.filter(t=>!t.done).slice(0,4).map(t=>taskHTML(t,true)).join('')||'<div class="empty">ما عندك مهام متبقية 🎉</div>';
+ $('dashIdeas').innerHTML=ideas.slice(0,3).map(i=>ideaHTML(i,true)).join('')||'<div class="empty">أضف أول فكرة لك ✨</div>';
+ let q=$('taskSearch').value.toLowerCase(),f=$('taskFilter').value;
+ $('allTasks').innerHTML=tasks.filter(t=>(!q||t.title.toLowerCase().includes(q))&&(f==='all'||(f==='done'?t.done:!t.done))).map(t=>taskHTML(t)).join('')||'<div class="empty">لا توجد مهام مطابقة</div>';
+ q=$('ideaSearch').value.toLowerCase();f=$('ideaFilter').value;
+ $('allIdeas').innerHTML=ideas.filter(i=>(!q||i.title.toLowerCase().includes(q))&&(f==='all'||i.status===f)).map(i=>ideaHTML(i)).join('')||'<div class="empty">لا توجد أفكار مطابقة</div>';bind()
+}
 ['taskSearch','taskFilter','ideaSearch','ideaFilter'].forEach(id=>$(id).addEventListener('input',render));
-$('notifyBtn').onclick=async()=>{if(!('Notification'in window)){toast('المتصفح لا يدعم الإشعارات');return}let p=await Notification.requestPermission();toast(p==='granted'?'تم تفعيل الإشعارات أثناء استخدام الموقع':'لم يتم منح إذن الإشعارات')};
-function checkDue(){if(!('Notification'in window)||Notification.permission!=='granted')return;let now=Date.now();tasks.forEach(t=>{if(t.due&&!t.done&&new Date(t.due).getTime()<=now&&!notified.has(t.id)){new Notification('تذكير من مساحة إبراهيم',{body:t.title});notified.add(t.id);localStorage.setItem('ib_notified',JSON.stringify([...notified]))}})}
-setInterval(checkDue,30000);checkDue();render();
+$('notifyBtn').onclick=async()=>{if(!('Notification'in window)){toast('المتصفح لا يدعم الإشعارات');return}let p=await Notification.requestPermission();toast(p==='granted'?'تم السماح بالإشعارات المحلية':'لم يتم منح إذن الإشعارات')};
+async function loadData(){
+ setStatus('جارٍ تحميل بياناتك السحابية...');
+ const [tr,ir]=await Promise.all([db.from('tasks').select('*').order('created_at',{ascending:false}),db.from('ideas').select('*').order('created_at',{ascending:false})]);
+ if(tr.error||ir.error){setStatus('تعذر الاتصال بقاعدة البيانات. تأكد من تشغيل ملف الإعداد SQL.');toast((tr.error||ir.error).message);return}
+ // Import old browser-only data once, only when the cloud account is empty.
+ if(tr.data.length===0&&ir.data.length===0){
+  const oldT=localTasks(),oldI=localIdeas();
+  if(oldT.length){const rows=oldT.map(t=>({id:String(t.id),user_id:user.id,title:t.title,description:t.desc||'',category:t.category||'work',due:t.due||null,done:!!t.done}));const {error}=await db.from('tasks').upsert(rows);if(error)toast('تعذر نقل المهام القديمة: '+error.message)}
+  if(oldI.length){const rows=oldI.map(i=>({id:String(i.id),user_id:user.id,title:i.title,description:i.desc||'',status:i.status||'new'}));const {error}=await db.from('ideas').upsert(rows);if(error)toast('تعذر نقل الأفكار القديمة: '+error.message)}
+  if(oldT.length||oldI.length){const [a,b]=await Promise.all([db.from('tasks').select('*').order('created_at',{ascending:false}),db.from('ideas').select('*').order('created_at',{ascending:false})]);if(a.data)tr.data=a.data;if(b.data)ir.data=b.data}
+ }
+ tasks=(tr.data||[]).map(t=>({...t,desc:t.description||''}));ideas=(ir.data||[]).map(i=>({...i,desc:i.description||''}));
+ setStatus('متصل — تتم مزامنة بياناتك');render();
+ if(channel)db.removeChannel(channel);
+ channel=db.channel('workspace-'+user.id).on('postgres_changes',{event:'*',schema:'public',table:'tasks',filter:'user_id=eq.'+user.id},()=>loadData()).on('postgres_changes',{event:'*',schema:'public',table:'ideas',filter:'user_id=eq.'+user.id},()=>loadData()).subscribe();
+}
+db.auth.onAuthStateChange(async(_event,session)=>{if(session?.user){user=session.user;hideAuth();if(!tasks.length&&!ideas.length)await loadData()}else{user=null;showAuth()}});
+(async()=>{const {data:{session}}=await db.auth.getSession();if(session?.user){user=session.user;hideAuth();await loadData()}else showAuth()})();
 </script>
 </body>
 </html>
