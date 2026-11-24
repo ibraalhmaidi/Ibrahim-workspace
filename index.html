@@ -304,12 +304,14 @@ async function bind(){
  document.querySelectorAll('[data-del-idea]').forEach(b=>b.onclick=async()=>{if(confirm('حذف الفكرة؟')){const {error}=await db.from('ideas').delete().eq('id',b.dataset.delIdea);if(error)toast(error.message);else await loadData()}});
 }
 function render(){
+ const isOverdue=t=>!t.done&&!!t.due&&new Date(t.due).getTime()<Date.now();
+ const ordered=[...tasks].sort((a,b)=>Number(isOverdue(b))-Number(isOverdue(a))||(a.due?new Date(a.due).getTime():Infinity)-(b.due?new Date(b.due).getTime():Infinity));
  let done=tasks.filter(t=>t.done).length,pct=tasks.length?Math.round(done/tasks.length*100):0;
- $('sTotal').textContent=tasks.length;$('sDone').textContent=done;$('sPending').textContent=tasks.length-done;$('sIdeas').textContent=ideas.length;$('percent').textContent=pct+'%';$('progressBar').style.width=pct+'%';
+ $('sTotal').textContent=tasks.length;$('sDone').textContent=done;$('sPending').textContent=tasks.length-done;$('sIdeas').textContent=ideas.length;$('sOverdue').textContent=tasks.filter(isOverdue).length;$('percent').textContent=pct+'%';$('progressBar').style.width=pct+'%';
  $('dashTasks').innerHTML=ordered.filter(t=>!t.done).slice(0,5).map(t=>taskHTML(t,true)).join('')||'<div class="empty">ما عندك مهام متبقية 🎉</div>';
  $('dashIdeas').innerHTML=ideas.slice(0,3).map(i=>ideaHTML(i,true)).join('')||'<div class="empty">أضف أول فكرة لك ✨</div>';
  let q=$('taskSearch').value.toLowerCase(),f=$('taskFilter').value;
- $('allTasks').innerHTML=tasks.filter(t=>(!q||t.title.toLowerCase().includes(q))&&(f==='all'||(f==='done'?t.done:!t.done))).map(t=>taskHTML(t)).join('')||'<div class="empty">لا توجد مهام مطابقة</div>';
+ $('allTasks').innerHTML=ordered.filter(t=>(!q||t.title.toLowerCase().includes(q))&&(f==='all'||(f==='done'?t.done:f==='overdue'?isOverdue(t):!t.done))).map(t=>taskHTML(t)).join('')||'<div class="empty">لا توجد مهام مطابقة</div>';
  q=$('ideaSearch').value.toLowerCase();f=$('ideaFilter').value;
  $('allIdeas').innerHTML=ideas.filter(i=>(!q||i.title.toLowerCase().includes(q))&&(f==='all'||i.status===f)).map(i=>ideaHTML(i)).join('')||'<div class="empty">لا توجد أفكار مطابقة</div>';bind()
 }
