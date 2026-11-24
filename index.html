@@ -231,7 +231,6 @@ async function loadData(){
 }
 db.auth.onAuthStateChange(async(event,session)=>{
  if(event==='PASSWORD_RECOVERY'){
-  $('authMessage').textContent='أدخل كلمة المرور الجديدة ثم اضغط حفظ كلمة المرور.';
   $('authPassword').value='';$('authPassword').placeholder='كلمة المرور الجديدة';
   $('loginBtn').textContent='حفظ كلمة المرور';$('signupBtn').style.display='none';$('forgotPassword').style.display='none';
   $('loginBtn').onclick=async()=>{
@@ -243,7 +242,7 @@ db.auth.onAuthStateChange(async(event,session)=>{
    $('authMessage').textContent='تم تحديث كلمة المرور بنجاح.';
    user=session?.user||user;hideAuth();await loadData();
   };
-  showAuth();return;
+  showAuth('أدخل كلمة المرور الجديدة ثم اضغط حفظ كلمة المرور.');return;
  }
  if(session?.user){user=session.user;hideAuth();if(!tasks.length&&!ideas.length)await loadData()}
  else{user=null;showAuth()}
