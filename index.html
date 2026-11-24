@@ -80,7 +80,7 @@ body{background:#fff;color:#263746}
 .auth-card input{width:100%;padding:12px;border:1px solid #e4edf1;border-radius:11px;margin:7px 0 12px;direction:ltr;text-align:left}
 .auth-actions{display:flex;gap:8px}.auth-actions button{flex:1}.auth-msg{font-size:12px;color:#159fc2;min-height:20px}
 .sync-status{font-size:10px;color:#159fc2;margin-top:5px}
-</style><script id="oneSignalSdk" src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.es6.js" defer onload="window.__oneSignalScriptLoaded=true" onerror="window.__oneSignalScriptFailed=true"></script>
+</style><script id="oneSignalSdk" src="https://cdn.onesignal.com/sdks/web/v16/OneSignalSDK.page.js" defer onload="window.__oneSignalScriptLoaded=true" onerror="window.__oneSignalScriptFailed=true"></script>
 <script>
 window.OneSignalDeferred = window.OneSignalDeferred || [];
 window.OneSignalDeferred.push(async function(OneSignal) {
@@ -88,9 +88,9 @@ window.OneSignalDeferred.push(async function(OneSignal) {
   try {
     await OneSignal.init({
       appId: "29e4a84a-aa52-4b1a-aa72-b9dc944ddbe9",
+      safari_web_id: "web.onesignal.auto.50fac9c2-9f7f-49e4-88a1-4637f1759b35",
       serviceWorkerPath: "/Ibrahim-workspace/OneSignalSDKWorker.js",
-      serviceWorkerParam: { scope: "/Ibrahim-workspace/" },
-      serviceWorkerOverrideForTypical: true
+      serviceWorkerParam: { scope: "/Ibrahim-workspace/" }
     });
     window.__oneSignalReady = true;
   } catch (error) {
