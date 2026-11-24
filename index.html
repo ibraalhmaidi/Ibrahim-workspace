@@ -133,6 +133,7 @@ body.dark .overdue .task-meta{color:#ffaaaa}
 .overdue .overdue-tag{background:#ffe0e0;color:#b42318;font-weight:700}
 .overdue .task-main p{color:#a94b4b}
 
+.floating-quick-add{position:fixed;right:22px;bottom:calc(24px + env(safe-area-inset-bottom));z-index:15;width:46px;height:46px;border-radius:16px;background:var(--blue);color:#fff;font-size:25px;line-height:1;box-shadow:0 8px 24px rgba(70,82,160,.28);display:grid;place-items:center;touch-action:none;cursor:grab;user-select:none}.floating-quick-add.dragging{cursor:grabbing;transition:none;box-shadow:0 12px 28px rgba(70,82,160,.36)}.subtle-note{font-size:12px;color:var(--muted);margin:-4px 0 14px}@media(max-width:560px){.floating-quick-add{width:44px;height:44px;border-radius:15px;right:16px;bottom:calc(82px + env(safe-area-inset-bottom))}}body.dark .floating-quick-add{background:#8d82e8;color:#fff}
 </style>
 
 <style>
@@ -189,7 +190,7 @@ window.OneSignalDeferred.push(async function(OneSignal) {
 <main>
   <header class="top">
     <div><div class="eyebrow" id="today"></div><div class="sync-status" id="syncStatus">جاري الاتصال...</div><h1 id="pageTitle">مساحتك | خطط، أنجز، وتطوّر</h1></div>
-    <div class="top-actions"><button class="icon-btn" title="الوضع الليلي" id="themeToggle" aria-label="تبديل الوضع الليلي">☾</button><button class="icon-btn" title="تفعيل التنبيهات" id="notifyBtn">♧</button><button class="secondary" id="testNotifyBtn" type="button">اختبار الإشعارات</button><button class="primary" id="quickAdd">＋ إضافة جديدة</button><div class="avatar">إ</div></div>
+    <div class="top-actions"><button class="icon-btn" title="الوضع الليلي" id="themeToggle" aria-label="تبديل الوضع الليلي">☾</button><button class="icon-btn" title="تفعيل التنبيهات" id="notifyBtn">♧</button><button class="secondary" id="testNotifyBtn" type="button">اختبار الإشعارات</button><div class="avatar">إ</div></div>
   </header>
   <section class="view active" id="dashboard">
     <div class="welcome"><div><h2>أهلًا بك في مساحتك ✨</h2><p>رتّب أفكارك، تابع مهامك، وخلي كل شيء واضح قدامك.</p></div><div class="welcome-art">☁️</div></div>
@@ -280,7 +281,7 @@ document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>go(b.dataset.v
 function openModal(type,item=null){$('entryType').value=type;$('entryId').value=item?.id||'';const label=type==='task'?'مهمة':type==='appointment'?'موعد':'فكرة';$('modalTitle').textContent=(item?'تعديل ':'إضافة ')+label;$('entryName').value=item?.title||'';$('entryDesc').value=type==='appointment'?(item?.desc||'').replace(/^الشخص:.*\n?/,''):item?.desc||'';$('entryPerson').value=type==='appointment'?((item?.desc||'').match(/^الشخص:\s*(.*)$/m)||[])[1]||'':'';$('entryCategory').value=item?.category||'work';$('entryDate').value=item?.due?new Date(item.due).toISOString().slice(0,16):'';$('entryStatus').value=item?.status||'new';$('descField').style.display=(type==='idea'||type==='appointment')?'grid':'none';$('categoryField').style.display=type==='task'?'grid':'none';$('dateField').style.display=(type==='task'||type==='appointment')?'grid':'none';$('entryDate').required=type==='appointment';$('personField').style.display=type==='appointment'?'grid':'none';$('entryPerson').required=type==='appointment';$('statusField').style.display=type==='idea'?'grid':'none';$('modalBack').classList.add('show');$('entryName').focus()}
 function closeModal(){$('modalBack').classList.remove('show')}
 $('cancelModal').onclick=closeModal;$('modalBack').onclick=e=>{if(e.target===$('modalBack'))closeModal()};
-$('quickAdd').onclick=()=>openModal('task');$('floatingQuickAdd').onclick=()=>openModal('task');$('addTask').onclick=()=>openModal('task');$('addIdea').onclick=()=>openModal('idea');$('addAppointment').onclick=()=>openModal('appointment');
+$('floatingQuickAdd').onclick=()=>{if(!window.__quickAddDragged)openModal('task')};$('addTask').onclick=()=>openModal('task');$('addIdea').onclick=()=>openModal('idea');$('addAppointment').onclick=()=>openModal('appointment');
 $('entryForm').onsubmit=async e=>{
  e.preventDefault();if(!user){showAuth();return}
  const type=$('entryType').value,id=$('entryId').value||crypto.randomUUID(),old=tasks.find(x=>x.id===id);
@@ -316,9 +317,9 @@ async function bind(){
 function render(){
  const isOverdue=t=>!t.done&&!!t.due&&new Date(t.due).getTime()<Date.now();
  const ordered=[...tasks].sort((a,b)=>Number(isOverdue(b))-Number(isOverdue(a))||(a.due?new Date(a.due).getTime():Infinity)-(b.due?new Date(b.due).getTime():Infinity));
- let done=tasks.filter(t=>t.done).length,pct=tasks.length?Math.round(done/tasks.length*100):0;
- $('sTotal').textContent=tasks.length;$('sDone').textContent=done;$('sPending').textContent=tasks.length-done;$('sIdeas').textContent=ideas.length;$('sOverdue').textContent=tasks.filter(isOverdue).length;$('percent').textContent=pct+'%';$('progressBar').style.width=pct+'%';
- $('dashTasks').innerHTML=ordered.filter(t=>!t.done).slice(0,5).map(t=>taskHTML(t,true)).join('')||'<div class="empty">ما عندك مهام متبقية 🎉</div>';
+ const regularTasks=tasks.filter(t=>t.category!=='appointment');let done=regularTasks.filter(t=>t.done).length,pct=regularTasks.length?Math.round(done/regularTasks.length*100):0;
+ $('sTotal').textContent=regularTasks.length;$('sDone').textContent=done;$('sPending').textContent=regularTasks.length-done;$('sIdeas').textContent=ideas.length;$('sOverdue').textContent=tasks.filter(isOverdue).length;$('percent').textContent=pct+'%';$('progressBar').style.width=pct+'%';
+ $('dashTasks').innerHTML=ordered.filter(t=>t.category!=='appointment'&&!t.done).slice(0,5).map(t=>taskHTML(t,true)).join('')||'<div class="empty">ما عندك مهام متبقية 🎉</div>';
  $('dashIdeas').innerHTML=ideas.slice(0,3).map(i=>ideaHTML(i,true)).join('')||'<div class="empty">أضف أول فكرة لك ✨</div>';
  let q=$('taskSearch').value.toLowerCase(),f=$('taskFilter').value;
  $('allTasks').innerHTML=ordered.filter(t=>t.category!=='appointment'&&(!q||t.title.toLowerCase().includes(q))&&(f==='all'||(f==='done'?t.done:f==='overdue'?isOverdue(t):!t.done))).map(t=>taskHTML(t)).join('')||'<div class="empty">لا توجد مهام مطابقة</div>';
@@ -329,6 +330,7 @@ function render(){
 }
 ['taskSearch','taskFilter','ideaSearch','ideaFilter'].forEach(id=>$(id).addEventListener('input',render));
 setInterval(render,30000); // Refresh overdue highlighting while the page stays open
+(()=>{const b=$('floatingQuickAdd');let sx=0,sy=0,ox=0,oy=0,moved=false;const saved=localStorage.getItem('ib_quick_add_pos');if(saved){try{const p=JSON.parse(saved);b.style.left=p.left+'px';b.style.top=p.top+'px';b.style.right='auto';b.style.bottom='auto'}catch{}}b.addEventListener('pointerdown',e=>{const r=b.getBoundingClientRect();sx=e.clientX;sy=e.clientY;ox=r.left;oy=r.top;moved=false;b.setPointerCapture(e.pointerId)});b.addEventListener('pointermove',e=>{if(!b.hasPointerCapture(e.pointerId))return;const dx=e.clientX-sx,dy=e.clientY-sy;if(Math.abs(dx)+Math.abs(dy)>5)moved=true;if(!moved)return;const x=Math.max(6,Math.min(innerWidth-b.offsetWidth-6,ox+dx)),y=Math.max(6,Math.min(innerHeight-b.offsetHeight-6,oy+dy));b.style.left=x+'px';b.style.top=y+'px';b.style.right='auto';b.style.bottom='auto';b.classList.add('dragging')});b.addEventListener('pointerup',e=>{if(moved){const r=b.getBoundingClientRect();localStorage.setItem('ib_quick_add_pos',JSON.stringify({left:r.left,top:r.top}));window.__quickAddDragged=true;setTimeout(()=>window.__quickAddDragged=false,250)}b.classList.remove('dragging')});})();
 $('testNotifyBtn').onclick=async()=>{try{if(!('Notification' in window)||Notification.permission!=='granted'){toast('فعّل الإشعارات أولاً من زر الجرس');return}const reg=await navigator.serviceWorker.ready;await reg.showNotification('مساحة إبراهيم',{body:'هذا إشعار تجريبي للتأكد من ظهور التنبيهات على جهازك.',icon:'/Ibrahim-workspace/icon.svg',badge:'/Ibrahim-workspace/icon.svg',tag:'ibrahim-test-notification'});toast('تم إرسال إشعار الاختبار للجهاز')}catch(e){toast('تعذر عرض الإشعار: '+(e?.message||String(e)))}};
 $('notifyBtn').onclick=async()=>{toast('جارٍ تفعيل الإشعارات...');if(window.__oneSignalInitError){toast('خطأ التهيئة: '+window.__oneSignalInitError);return}if(window.__oneSignalScriptFailed){toast('تعذر تحميل ملف OneSignal');return}if(!window.__oneSignalScriptLoaded){toast('ملف OneSignal لم يكتمل تحميله');return}if(!window.__oneSignalReady||!window.OneSignalInstance){toast('تشخيص OneSignal: SDK='+!!window.__oneSignalScriptLoaded+'، بدأ='+!!window.__oneSignalCallbackStarted+'، جاهز='+!!window.__oneSignalReady+'، خطأ='+(window.__oneSignalInitError||'لا يوجد'));return}try{const OS=window.OneSignalInstance;await OS.Notifications.requestPermission();await OS.User.PushSubscription.optIn();const sub=OS.User.PushSubscription;if(sub.optedIn&&sub.id){toast('تم تفعيل الإشعارات بنجاح');}else{toast('لم يكتمل الاشتراك. حالة الإذن: '+OS.Notifications.permission+' — الاشتراك: '+sub.optedIn+' — المعرّف: '+(sub.id||'غير موجود'));}}catch(e){toast('تعذر تفعيل الإشعارات: '+(e?.message||String(e)))}};
 async function loadData(){
