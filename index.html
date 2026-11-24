@@ -187,7 +187,7 @@ window.OneSignalDeferred.push(async function(OneSignal) {
 </aside>
 <main>
   <header class="top">
-    <div><div class="eyebrow" id="today"></div><div class="sync-status" id="syncStatus">جاري الاتصال...</div><h1 id="pageTitle">صباح الإنجاز 👋</h1></div>
+    <div><div class="eyebrow" id="today"></div><div class="sync-status" id="syncStatus">جاري الاتصال...</div><h1 id="pageTitle">مساحتك | خطط، أنجز، وتطوّر</h1></div>
     <div class="top-actions"><button class="icon-btn" title="الوضع الليلي" id="themeToggle" aria-label="تبديل الوضع الليلي">☾</button><button class="icon-btn" title="تفعيل التنبيهات" id="notifyBtn">♧</button><button class="secondary" id="testNotifyBtn" type="button">اختبار الإشعارات</button><button class="primary" id="quickAdd">＋ إضافة جديدة</button><div class="avatar">إ</div></div>
   </header>
   <section class="view active" id="dashboard">
@@ -269,7 +269,7 @@ $('forgotPassword').onclick=async()=>{
  const {error}=await db.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+window.location.pathname});
  $('authMessage').textContent=error?'تعذر إرسال الرابط: '+error.message:'تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني.';
 };
-function go(v){document.querySelectorAll('.view').forEach(x=>x.classList.toggle('active',x.id===v));document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.view===v));$('pageTitle').textContent=v==='dashboard'?'صباح الإنجاز 👋':v==='tasks'?'قائمة مهامي':'أفكاري الجديدة';}
+function go(v){document.querySelectorAll('.view').forEach(x=>x.classList.toggle('active',x.id===v));document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.view===v));$('pageTitle').textContent=v==='dashboard'?'مساحتك | خطط، أنجز، وتطوّر':v==='tasks'?'قائمة مهامي':'أفكاري الجديدة';}
 document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>go(b.dataset.view));document.querySelectorAll('[data-goto]').forEach(b=>b.onclick=()=>go(b.dataset.goto));
 function openModal(type,item=null){$('entryType').value=type;$('entryId').value=item?.id||'';$('modalTitle').textContent=(item?'تعديل ':'إضافة ')+(type==='task'?'مهمة':'فكرة');$('entryName').value=item?.title||'';$('entryDesc').value=item?.desc||'';$('entryCategory').value=item?.category||'work';$('entryDate').value=item?.due?new Date(item.due).toISOString().slice(0,16):'';$('entryStatus').value=item?.status||'new';$('descField').style.display=type==='idea'?'grid':'none';$('categoryField').style.display=type==='task'?'grid':'none';$('dateField').style.display=type==='task'?'grid':'none';$('statusField').style.display=type==='idea'?'grid':'none';$('modalBack').classList.add('show');$('entryName').focus()}
 function closeModal(){$('modalBack').classList.remove('show')}
