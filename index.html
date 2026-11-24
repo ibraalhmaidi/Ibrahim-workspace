@@ -83,6 +83,7 @@ body{background:#fff;color:#263746}
   <label>البريد الإلكتروني</label><input id="authEmail" type="email" autocomplete="email" placeholder="name@example.com">
   <label>كلمة المرور</label><input id="authPassword" type="password" autocomplete="current-password" placeholder="8 أحرف على الأقل">
   <div class="auth-actions"><button class="primary" id="loginBtn">تسجيل الدخول</button><button class="secondary" id="signupBtn">إنشاء حساب</button></div>
+  <button type="button" class="muted-link" id="forgotPassword" style="margin-top:12px">نسيت كلمة المرور؟</button>
   <p class="auth-msg" id="authMessage"></p>
 </div></div>
 <div class="app">
@@ -164,6 +165,13 @@ async function signIn(mode){
  user=result.data.user;hideAuth();await loadData();
 }
 $('loginBtn').onclick=()=>signIn('login');$('signupBtn').onclick=()=>signIn('signup');
+$('forgotPassword').onclick=async()=>{
+ const email=$('authEmail').value.trim();
+ if(!email){$('authMessage').textContent='اكتب بريدك الإلكتروني أولاً.';return}
+ $('authMessage').textContent='جارٍ إرسال رابط الاستعادة...';
+ const {error}=await db.auth.resetPasswordForEmail(email,{redirectTo:window.location.origin+window.location.pathname});
+ $('authMessage').textContent=error?'تعذر إرسال الرابط: '+error.message:'تم إرسال رابط إعادة تعيين كلمة المرور إلى بريدك الإلكتروني.';
+};
 function go(v){document.querySelectorAll('.view').forEach(x=>x.classList.toggle('active',x.id===v));document.querySelectorAll('.nav button').forEach(x=>x.classList.toggle('active',x.dataset.view===v));$('pageTitle').textContent=v==='dashboard'?'صباح الإنجاز 👋':v==='tasks'?'قائمة مهامي':'أفكاري الجديدة';}
 document.querySelectorAll('.nav button').forEach(b=>b.onclick=()=>go(b.dataset.view));document.querySelectorAll('[data-goto]').forEach(b=>b.onclick=()=>go(b.dataset.goto));
 function openModal(type,item=null){$('entryType').value=type;$('entryId').value=item?.id||'';$('modalTitle').textContent=(item?'تعديل ':'إضافة ')+(type==='task'?'مهمة':'فكرة');$('entryName').value=item?.title||'';$('entryDesc').value=item?.desc||'';$('entryCategory').value=item?.category||'work';$('entryDate').value=item?.due?new Date(item.due).toISOString().slice(0,16):'';$('entryStatus').value=item?.status||'new';$('descField').style.display=type==='idea'?'grid':'none';$('categoryField').style.display=type==='task'?'grid':'none';$('dateField').style.display=type==='task'?'grid':'none';$('statusField').style.display=type==='idea'?'grid':'none';$('modalBack').classList.add('show');$('entryName').focus()}
@@ -221,7 +229,25 @@ async function loadData(){
  if(channel)db.removeChannel(channel);
  channel=db.channel('workspace-'+user.id).on('postgres_changes',{event:'*',schema:'public',table:'tasks',filter:'user_id=eq.'+user.id},()=>loadData()).on('postgres_changes',{event:'*',schema:'public',table:'ideas',filter:'user_id=eq.'+user.id},()=>loadData()).subscribe();
 }
-db.auth.onAuthStateChange(async(_event,session)=>{if(session?.user){user=session.user;hideAuth();if(!tasks.length&&!ideas.length)await loadData()}else{user=null;showAuth()}});
+db.auth.onAuthStateChange(async(event,session)=>{
+ if(event==='PASSWORD_RECOVERY'){
+  $('authMessage').textContent='أدخل كلمة المرور الجديدة ثم اضغط حفظ كلمة المرور.';
+  $('authPassword').value='';$('authPassword').placeholder='كلمة المرور الجديدة';
+  $('loginBtn').textContent='حفظ كلمة المرور';$('signupBtn').style.display='none';$('forgotPassword').style.display='none';
+  $('loginBtn').onclick=async()=>{
+   const password=$('authPassword').value;
+   if(password.length<8){$('authMessage').textContent='كلمة المرور يجب أن تكون 8 أحرف على الأقل.';return}
+   $('authMessage').textContent='جارٍ تحديث كلمة المرور...';
+   const {error}=await db.auth.updateUser({password});
+   if(error){$('authMessage').textContent='تعذر تحديث كلمة المرور: '+error.message;return}
+   $('authMessage').textContent='تم تحديث كلمة المرور بنجاح.';
+   user=session?.user||user;hideAuth();await loadData();
+  };
+  showAuth();return;
+ }
+ if(session?.user){user=session.user;hideAuth();if(!tasks.length&&!ideas.length)await loadData()}
+ else{user=null;showAuth()}
+});
 (async()=>{const {data:{session}}=await db.auth.getSession();if(session?.user){user=session.user;hideAuth();await loadData()}else showAuth()})();
 </script>
 </body>
