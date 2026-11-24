@@ -71,6 +71,14 @@ body{background:#fff;color:#263746}
 .side-note{background:#fbfdfe;border-color:#edf1f4}
 #percent{color:#159fc2!important}
 
+/* Highlight overdue, incomplete tasks */
+.task.overdue,.row-card.overdue{background:#fff1f1;border-color:#f2b8b8}
+.overdue .task-title{color:#c62828}
+.overdue .task-meta{color:#bd3434;font-weight:600}
+.overdue .check{border-color:#e07b7b;background:#fff}
+.overdue .overdue-tag{background:#ffe0e0;color:#b42318;font-weight:700}
+.overdue .task-main p{color:#a94b4b}
+
 </style>
 
 <style>
@@ -222,7 +230,12 @@ $('entryForm').onsubmit=async e=>{
  }
  closeModal();await loadData();toast('تم الحفظ والمزامنة ✨')
 };
-function taskHTML(t,compact=false){return `<div class="${compact?'task':'row-card'}"><button class="check ${t.done?'done':''}" data-check="${esc(t.id)}" aria-label="إنجاز">${t.done?'✓':''}</button><div class="task-main"><div class="task-title ${t.done?'done':''}">${esc(t.title)}</div><div class="task-meta">${({work:'عمل',study:'دراسة',personal:'شخصي'}[t.category]||'عام')} · ${t.due?fmt(t.due):'بدون موعد'}</div>${compact?'':`<p>${esc(t.desc)}</p>`}</div>${compact?`<span class="tag ${t.category}">${({work:'عمل',study:'دراسة',personal:'شخصي'}[t.category])}</span>`:`<div class="row-actions"><button class="tiny" data-edit-task="${esc(t.id)}">تعديل</button><button class="tiny" data-del-task="${esc(t.id)}">حذف</button></div>`}</div>`}
+function taskHTML(t,compact=false){
+ const overdue=!t.done&&!!t.due&&new Date(t.due).getTime()<Date.now();
+ const overdueClass=overdue?' overdue':'';
+ const categoryLabel=({work:'عمل',study:'دراسة',personal:'شخصي'}[t.category]||'عام');
+ return `<div class="${compact?'task':'row-card'}${overdueClass}"><button class="check ${t.done?'done':''}" data-check="${esc(t.id)}" aria-label="إنجاز">${t.done?'✓':''}</button><div class="task-main"><div class="task-title ${t.done?'done':''}">${esc(t.title)}</div><div class="task-meta">${categoryLabel} · ${t.due?fmt(t.due):'بدون موعد'}${overdue?' · متأخرة':''}</div>${compact?'':`<p>${esc(t.desc)}</p>`}</div>${compact?`<span class="tag ${overdue?'overdue-tag':t.category}">${overdue?'متأخرة':categoryLabel}</span>`:`<div class="row-actions">${overdue?'<span class="tag overdue-tag">متأخرة</span>':''}<button class="tiny" data-edit-task="${esc(t.id)}">تعديل</button><button class="tiny" data-del-task="${esc(t.id)}">حذف</button></div>`}</div>`;
+}
 function ideaHTML(i,compact=false){return `<div class="${compact?'idea':'row-card'}"><div class="task-main"><div class="idea-top"><span class="idea-title">${esc(i.title)}</span><span class="tag">${({new:'جديدة',progress:'قيد التنفيذ',done:'مكتملة'}[i.status])}</span></div><p class="idea-desc">${esc(i.desc||'لا توجد تفاصيل بعد')}</p>${compact?'':`<div class="row-actions"><button class="tiny" data-edit-idea="${esc(i.id)}">تعديل</button><button class="tiny" data-del-idea="${esc(i.id)}">حذف</button></div>`}</div></div>`}
 async function bind(){
  document.querySelectorAll('[data-check]').forEach(b=>b.onclick=async()=>{const t=tasks.find(x=>x.id===b.dataset.check);if(!t)return;const {error}=await db.from('tasks').update({done:!t.done,updated_at:new Date().toISOString()}).eq('id',t.id);if(error)toast(error.message);else await loadData()});
@@ -242,6 +255,7 @@ function render(){
  $('allIdeas').innerHTML=ideas.filter(i=>(!q||i.title.toLowerCase().includes(q))&&(f==='all'||i.status===f)).map(i=>ideaHTML(i)).join('')||'<div class="empty">لا توجد أفكار مطابقة</div>';bind()
 }
 ['taskSearch','taskFilter','ideaSearch','ideaFilter'].forEach(id=>$(id).addEventListener('input',render));
+setInterval(render,30000); // Refresh overdue highlighting while the page stays open
 $('testNotifyBtn').onclick=async()=>{try{if(!('Notification' in window)||Notification.permission!=='granted'){toast('فعّل الإشعارات أولاً من زر الجرس');return}const reg=await navigator.serviceWorker.ready;await reg.showNotification('مساحة إبراهيم',{body:'هذا إشعار تجريبي للتأكد من ظهور التنبيهات على جهازك.',icon:'/Ibrahim-workspace/icon.svg',badge:'/Ibrahim-workspace/icon.svg',tag:'ibrahim-test-notification'});toast('تم إرسال إشعار الاختبار للجهاز')}catch(e){toast('تعذر عرض الإشعار: '+(e?.message||String(e)))}};
 $('notifyBtn').onclick=async()=>{toast('جارٍ تفعيل الإشعارات...');if(window.__oneSignalInitError){toast('خطأ التهيئة: '+window.__oneSignalInitError);return}if(window.__oneSignalScriptFailed){toast('تعذر تحميل ملف OneSignal');return}if(!window.__oneSignalScriptLoaded){toast('ملف OneSignal لم يكتمل تحميله');return}if(!window.__oneSignalReady||!window.OneSignalInstance){toast('تشخيص OneSignal: SDK='+!!window.__oneSignalScriptLoaded+'، بدأ='+!!window.__oneSignalCallbackStarted+'، جاهز='+!!window.__oneSignalReady+'، خطأ='+(window.__oneSignalInitError||'لا يوجد'));return}try{const OS=window.OneSignalInstance;await OS.Notifications.requestPermission();await OS.User.PushSubscription.optIn();const sub=OS.User.PushSubscription;if(sub.optedIn&&sub.id){toast('تم تفعيل الإشعارات بنجاح');}else{toast('لم يكتمل الاشتراك. حالة الإذن: '+OS.Notifications.permission+' — الاشتراك: '+sub.optedIn+' — المعرّف: '+(sub.id||'غير موجود'));}}catch(e){toast('تعذر تفعيل الإشعارات: '+(e?.message||String(e)))}};
 async function loadData(){
