@@ -312,7 +312,7 @@ $('entryForm').onsubmit=async e=>{
   const due=$('entryDate').value?new Date($('entryDate').value).toISOString():null;
   const followDesc=type==='followup'?('الشخص: '+$('entryPerson').value.trim()+'\\nالجهة: '+$('entryDepartment').value.trim()+'\\nآخر تواصل: '+$('entryLastContact').value+'\\nالإجراء: '+$('entryNextStep').value.trim()+'\\nالحالة: '+$('entryFollowStatus').value+(desc?'\\n'+desc:'')):desc;
   const appointmentDesc=type==='appointment'?('الشخص: '+$('entryPerson').value.trim()+(desc?'\\n'+desc:'')):followDesc;
-  const reminderDesc=type==='reminder'?'[[repeat:'+ $('entryRepeat').value +']]'+(desc?'\\n'+desc:''):appointmentDesc;
+  const reminderDesc=type==='reminder'?'[[repeat:'+ $('entryRepeat').value +']]'+(desc?'\n'+desc:''):appointmentDesc;
    const row={id,user_id:user.id,title,description:reminderDesc,category:type==='appointment'?'appointment':type==='followup'?'followup':type==='reminder'?'reminder':$('entryCategory').value,due,done:type==='followup'?$('entryFollowStatus').value==='done':old?.done||false,updated_at:new Date().toISOString()};
   const {error}=await db.from('tasks').upsert(row);if(error){toast('تعذر الحفظ: '+error.message);return}
  }else{
